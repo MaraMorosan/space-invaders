@@ -1,140 +1,162 @@
 import Phaser from "phaser";
+import { CFG } from "../config";
+import { UIManager } from "../managers/UIManager";
+import { WaveManager } from "../managers/WaveManager";
+import { BossManager } from "../managers/BossManager";
+import { PowerUpManager } from "../managers/PowerUpManager";
 
 export default class GameScene extends Phaser.Scene {
   private player!: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private shootKey!: Phaser.Input.Keyboard.Key;
+
   private bullets!: Phaser.Physics.Arcade.Group;
   private enemies!: Phaser.Physics.Arcade.Group;
-  private lastShot = 0;
-  private score = 0;
-  private scoreText!: Phaser.GameObjects.Text;
+  private enemyBullets!: Phaser.Physics.Arcade.Group;
 
-  constructor() {
-    super("GameScene");
-  }
+  private score = 0;
+  private ui!: UIManager;
+
+  private pfLeft = 0;
+  private pfRight = 0;
+
+  private waveMgr!: WaveManager;
+  private bossMgr!: BossManager;
+
+  private bossCountdown = CFG.bossCountdownStart;
+
+	private powerUpMgr!: PowerUpManager;
+
+  constructor() { super("GameScene"); }
 
   preload() {
     this.load.svg("player", "/assets/images/player.svg");
     this.load.svg("enemy", "/assets/images/enemy.svg");
+    this.load.svg("boss",  "/assets/images/enemy.svg");
 
     const g = this.add.graphics();
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(0, 0, 2, 10);
+    g.fillStyle(0xffffff, 1).fillRect(0, 0, 2, 10);
     g.generateTexture("bullet", 2, 10);
     g.destroy();
-
-    // this.load.audio("shoot", "/assets/sfx/shoot.ogg");
-    // this.load.audio("boom",  "/assets/sfx/boom.ogg");
   }
 
   create() {
-    const w = this.scale.width;
-    const h = this.scale.height;
+   const W = this.scale.width, H = this.scale.height;
+		this.pfLeft = CFG.gutterX;
+		this.pfRight = W - CFG.gutterX;
 
-    // Player
-    this.player = this.physics.add.image(w / 2, h - 70, "player");
-    this.player.setCollideWorldBounds(true);
-    this.player.setCircle(16, 8, 8);
-    this.player.setMaxVelocity(380);
+		const gutter = this.add.graphics().setDepth(5);
+		gutter.fillStyle(0x05070b, 1);
+		gutter.fillRect(0, 0, this.pfLeft, H);
+		gutter.fillRect(this.pfRight, 0, W - this.pfRight, H);
+		this.physics.world.setBounds(this.pfLeft, 0, this.pfRight - this.pfLeft, H, true, true, true, true);
 
-    const kb = this.input.keyboard!;
-    this.cursors = kb.createCursorKeys();
-    this.shootKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+		this.player = this.physics.add.image((this.pfLeft + this.pfRight) / 2, H - 70, "player");
+		this.player.setCollideWorldBounds(true);
+		this.player.setCircle(16, 8, 8);
+		this.player.setMaxVelocity(420);
 
-    // Grupuri
-    this.bullets = this.physics.add.group({
-      classType: Phaser.Physics.Arcade.Image,
-      maxSize: 80,
-      runChildUpdate: false,
-    });
+		this.cursors = this.input.keyboard!.createCursorKeys();
 
-    this.enemies = this.physics.add.group({
-      classType: Phaser.Physics.Arcade.Image,
-      maxSize: 200,
-      runChildUpdate: false,
-    });
+		this.bullets      = this.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 120 });
+		this.enemies      = this.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 200 });
+		this.enemyBullets = this.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 120 });
 
-    this.time.addEvent({
-      delay: 700,
-      loop: true,
-      callback: () => {
-        const x = Phaser.Math.Between(40, w - 40);
-        const e = this.enemies.get(x, -30, "enemy") as Phaser.Physics.Arcade.Image | null;
-        if (!e) return;
-        e.setActive(true).setVisible(true);
-        e.setVelocity(0, Phaser.Math.Between(90, 160));
-        e.setData("hp", 1);
-      },
-    });
+		this.ui = new UIManager(this, this.pfLeft, this.pfRight);
+
+		this.powerUpMgr = new PowerUpManager(this, this.player, this.bullets, this.ui, this.pfLeft, this.pfRight);
+
+		this.time.addEvent({ delay: CFG.autoFireMs, loop: true, callback: () => this.shoot() });
+
+		this.waveMgr = new WaveManager(this, this.enemies, this.pfLeft, this.pfRight);
+		this.waveMgr.start();
+
+		this.bossMgr = new BossManager(this, this.player, this.bullets, this.enemyBullets, this.ui, this.pfLeft, this.pfRight);
 
     this.physics.add.overlap(
-      this.bullets,
-      this.enemies,
-      (bullet, enemy) => {
-        (bullet as Phaser.Physics.Arcade.Image).destroy();
-        (enemy as Phaser.Physics.Arcade.Image).destroy();
-        this.addScore(10);
-        // this.sound.play("boom", { volume: 0.5 });
-      }
+      this.bullets, this.enemies,
+      (bullet, enemy) => this.hitEnemy(bullet as Phaser.Physics.Arcade.Image, enemy as Phaser.Physics.Arcade.Image)
     );
 
     this.physics.add.overlap(
-      this.player,
-      this.enemies,
+      this.player, this.enemies,
       (_player, enemy) => {
         (enemy as Phaser.Physics.Arcade.Image).destroy();
-        this.cameras.main.shake(100, 0.01);
+        this.cameras.main.shake(120, 0.01);
         this.addScore(-25);
       }
     );
 
-    this.scoreText = this.add.text(12, 10, "Score: 0", {
-      fontFamily: "monospace",
-      fontSize: "20px",
-      color: "#C2F970",
-    }).setDepth(10).setScrollFactor(0);
+    this.physics.add.overlap(
+      this.player, this.enemyBullets,
+      (_player, ebullet) => {
+        (ebullet as Phaser.Physics.Arcade.Image).destroy();
+        this.cameras.main.shake(150, 0.012);
+        this.addScore(-40);
+      }
+    );
+
+    this.ui.setBossTimerText(`Boss in: ${this.bossCountdown}s`);
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => {
+        if (this.bossMgr.active) return;
+        this.bossCountdown--;
+        if (this.bossCountdown <= 0) {
+          this.bossMgr.spawn(() => this.waveMgr.pause());
+          this.bossCountdown = CFG.bossCountdownStart;
+        } else {
+          this.ui.setBossTimerText(`Boss in: ${this.bossCountdown}s`);
+        }
+      },
+    });
   }
 
   private addScore(delta: number) {
     this.score = Math.max(0, this.score + delta);
-    this.scoreText.setText(`Score: ${this.score}`);
+    this.ui.setScore(this.score);
   }
 
   private shoot() {
-    const now = this.time.now;
-    if (now - this.lastShot < 130) return;
-    this.lastShot = now;
-
-    const b = this.bullets.get(this.player.x, this.player.y - 28, "bullet") as Phaser.Physics.Arcade.Image | null;
-    if (!b) return;
-    b.setActive(true).setVisible(true);
-    b.setVelocity(0, -520);
-    // this.sound.play("shoot", { volume: 0.4 });
+    this.powerUpMgr.shoot();
   }
 
-  update(_time: number, _delta: number) {
+  private hitEnemy(bullet: Phaser.Physics.Arcade.Image, enemy: Phaser.Physics.Arcade.Image) {
+    if ((enemy as any).getData?.("__isBoss") || enemy === this.bossMgr.boss) return;
+
+    bullet.destroy();
+    const hp = (enemy.getData("hp") as number) - 1;
+    enemy.setData("hp", hp);
+    this.addScore(2);
+    if (hp <= 0) {
+      const sc = enemy.getData("score") as number | undefined;
+      enemy.destroy();
+      this.addScore(sc ?? 10);
+    }
+  }
+
+	private pruneGroup(
+		group: Phaser.Physics.Arcade.Group,
+		isOut: (o: Phaser.Physics.Arcade.Image) => boolean
+	) {
+		(group.getChildren() as Phaser.GameObjects.GameObject[]).forEach((obj) => {
+			const go = obj as Phaser.Physics.Arcade.Image;
+			if (go.active && isOut(go)) go.destroy();
+		});
+	}
+
+  update() {
     const speed = 420;
     this.player.setVelocity(0);
+    if (this.cursors.left?.isDown) this.player.setVelocityX(-speed);
+    else if (this.cursors.right?.isDown) this.player.setVelocityX(speed);
 
-    if (this.cursors.left?.isDown) {
-      this.player.setVelocityX(-speed);
-    } else if (this.cursors.right?.isDown) {
-      this.player.setVelocityX(speed);
-    }
+		this.pruneGroup(this.enemies,      e  => e.y > this.scale.height + 40);
+		this.pruneGroup(this.bullets,      b  => b.y < -20);
+		this.pruneGroup(this.enemyBullets, eb => eb.y > this.scale.height + 20);
 
-    if (Phaser.Input.Keyboard.JustDown(this.shootKey)) {
-      this.shoot();
-    }
+    this.bossMgr.update();
 
-    (this.enemies.getChildren() as Phaser.GameObjects.GameObject[]).forEach((child) => {
-      const e = child as Phaser.Physics.Arcade.Image;
-      if (e.active && e.y > this.scale.height + 40) e.destroy();
-    });
-
-    (this.bullets.getChildren() as Phaser.GameObjects.GameObject[]).forEach((child) => {
-      const b = child as Phaser.Physics.Arcade.Image;
-      if (b.active && b.y < -20) b.destroy();
-    });
+    if (!this.bossMgr.active) this.waveMgr.resume();
   }
 }
