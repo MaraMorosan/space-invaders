@@ -5,7 +5,7 @@ export type PowerUpType = "triple" | "quad" | "rapid";
 type SfxBank = { laser: { play(volMul?: number): void } };
 
 export const POWERUP_CFG = {
-  spawnEveryMs: 12000,
+  spawnEveryMs: 20000,
   durationMs: 6000,
   fallSpeed: [140, 180],
 };

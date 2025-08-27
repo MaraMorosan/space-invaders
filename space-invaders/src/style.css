@@ -13,9 +13,13 @@ html, body {
   background: #0b1117;
 }
 
+#game-holder {
+  display: block;
+}
+
 canvas {
   display: block;
+  background: transparent !important;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  background: transparent !important;
 }

@@ -79,18 +79,19 @@ export default class GameScene extends Phaser.Scene {
   private bgm!: Phaser.Sound.BaseSound;
 
   create() {
-    const W = this.scale.width, H = this.scale.height;
+    const W = this.cameras.main.width;
+    const H = this.cameras.main.height;
     
 		const gutterX = Math.max(CFG.gutterX, Math.round(W * 0.12));
     this.pfLeft  = gutterX;
     this.pfRight = W - gutterX;
 
+    this.gutter = this.add.graphics().setDepth(5);
+    this.gutter.setScrollFactor(0);
+    this.drawGutters(W, H);
     this.physics.world.setBounds(this.pfLeft, 0, this.pfRight - this.pfLeft, H, true, true, true, true);
 
     this.createStarfield();
-
-    this.gutter = this.add.graphics().setDepth(5);
-    this.drawGutters(W, H);
 
 		this.player = this.physics.add.image((this.pfLeft + this.pfRight) / 2, H - 70, "player");
 		this.player.setCollideWorldBounds(true);
@@ -104,7 +105,6 @@ export default class GameScene extends Phaser.Scene {
 		this.enemyBullets = this.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 120 });
 
 		this.ui = new UIManager(this, this.pfLeft, this.pfRight);
-    this.fx = new EffectsManager(this);
 
 		this.powerUpMgr = new PowerUpManager(this, this.player, this.bullets, this.ui, this.pfLeft, this.pfRight);
 
@@ -178,18 +178,16 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
-    this.scale.on("resize", (gs: Phaser.Structs.Size) => {
-    this.handleResize(gs.width, gs.height);
-    });
+    this.scale.on("resize", () => this.handleResize());
 
     this.bgm = this.sound.add('bgm', { loop: true, volume: 0 });
     this.bgm.play();
-    this.tweens.add({ targets: this.bgm, volume: 0.25, duration: 600 });
+    this.tweens.add({ targets: this.bgm, volume: 0.05, duration: 600 });
 
      this.sfx = {
-      laser:          createSfx(this, 'laser',          { pool: 8, volume: 0.35 }),
-      enemyDestroyed: createSfx(this, 'enemy_destroyed',{ pool: 4, volume: 0.5, cooldownMs: 30 }),
-      bossFire:       createSfx(this, 'boss_fire',      { pool: 2, volume: 0.25, cooldownMs: 80 }),
+      laser:          createSfx(this, 'laser',          { pool: 8, volume: 0.15 }),
+      enemyDestroyed: createSfx(this, 'enemy_destroyed',{ pool: 4, volume: 0.04, cooldownMs: 30 }),
+      bossFire:       createSfx(this, 'boss_fire',      { pool: 2, volume: 0.05, cooldownMs: 80 }),
     };
 
     this.powerUpMgr.setSfx?.(this.sfx);
@@ -229,7 +227,10 @@ export default class GameScene extends Phaser.Scene {
     for (let i = 0; i < 40; i++) this.starsFast.emitParticleAt(Phaser.Math.Between(this.pfLeft, this.pfRight), Phaser.Math.Between(0, H));
   }
 
-  private handleResize(W: number, H: number) {
+  private handleResize() {
+    const W = this.cameras.main.width;
+    const H = this.cameras.main.height;
+
     const gutterX = Math.max(CFG.gutterX, Math.round(W * 0.12));
     this.pfLeft  = gutterX;
     this.pfRight = W - gutterX;
@@ -240,6 +241,7 @@ export default class GameScene extends Phaser.Scene {
     this.createStarfield();
     this.player.x = Phaser.Math.Clamp(this.player.x, this.pfLeft + 20, this.pfRight - 20);
     this.player.y = H - 70;
+
     this.waveMgr.setBounds(this.pfLeft, this.pfRight);
     this.bossMgr.setBounds(this.pfLeft, this.pfRight);
     this.ui.resize(this.pfLeft, this.pfRight);
@@ -316,7 +318,7 @@ export default class GameScene extends Phaser.Scene {
 }
 
 function createSfx(scene: Phaser.Scene, key: string, {
-  pool = 4, volume = 0.5, cooldownMs = 0
+  pool = 4, volume = 0.10, cooldownMs = 0
 } = {}): Sfx {
   const sounds = Array.from({ length: pool }, () => scene.sound.add(key, { volume }));
   let idx = 0;
