@@ -3,6 +3,11 @@ import { BOSSES, CFG } from "../config";
 import { UIManager } from "./UIManager";
 import { EffectsManager } from "./EffectsManager";
 
+type SfxBank = {
+  bossFire:       { play: (volMul?: number) => void },
+  enemyDestroyed: { play: (volMul?: number) => void },
+};
+
 export class BossManager {
   public boss?: Phaser.Physics.Arcade.Image;
   public bossGroup: Phaser.Physics.Arcade.Group;
@@ -27,6 +32,7 @@ export class BossManager {
   private fireToggleEvent?: Phaser.Time.TimerEvent;
 	private finishing = false;
   private fx?: EffectsManager;
+  private sfx?: SfxBank;
 
   constructor(
     scene: Phaser.Scene,
@@ -62,6 +68,7 @@ export class BossManager {
   }
 
   public setFx(fx: EffectsManager) { this.fx = fx; }
+  public setSfx(sfx: SfxBank) { this.sfx = sfx; }
 
   spawn(onSpawn?: () => void) {
     if (this.active) return;
@@ -155,6 +162,7 @@ export class BossManager {
       this.kills++;
       this.ui.setBossTimerText("Boss defeated!");
       this.scene.cameras.main.shake(220, 0.008);
+      this.sfx?.enemyDestroyed.play();
     }
 
     this.hp = 0;
@@ -234,6 +242,7 @@ private fireBossBullet() {
 	const speed = CFG.bossBulletSpeedBase + k * CFG.bossBulletSpeedPerKill;
 	b.setVelocity(0, speed);
   b.setAngle(180);
+  this.sfx?.bossFire.play();
 }
 
 setBounds(left: number, right: number) {

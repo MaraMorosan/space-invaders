@@ -7,6 +7,7 @@ import { PowerUpManager } from "../managers/PowerUpManager";
 import { EffectsManager } from "../managers/EffectsManager";
 
 type ParticleManager = ReturnType<Phaser.GameObjects.GameObjectFactory["particles"]>;
+type Sfx = { play: (volMul?: number) => void };
 
 export default class GameScene extends Phaser.Scene {
   private player!: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
@@ -48,6 +49,11 @@ export default class GameScene extends Phaser.Scene {
     this.load.svg("boss_brute",  "/assets/images/boss_brute.svg");
     this.load.svg("crate", "assets/images/logo-white.svg", { width: 14, height: 18 });
 
+    this.load.audio('bgm', 'assets/sfx/bgm.ogg');
+    this.load.audio('boss_fire', 'assets/sfx/boss_fight.ogg');
+    this.load.audio('enemy_destroyed', 'assets/sfx/enemy_destroyed.ogg');
+    this.load.audio('laser', 'assets/sfx/laser.ogg');
+
 
     const g = this.add.graphics();
     g.clear();
@@ -63,6 +69,14 @@ export default class GameScene extends Phaser.Scene {
 
     g.destroy();
   }
+
+  private sfx!: {
+    laser: Sfx;
+    enemyDestroyed: Sfx;
+    bossFire: Sfx;
+  };
+
+  private bgm!: Phaser.Sound.BaseSound;
 
   create() {
     const W = this.scale.width, H = this.scale.height;
@@ -97,7 +111,6 @@ export default class GameScene extends Phaser.Scene {
 		this.time.addEvent({ delay: CFG.autoFireMs, loop: true, callback: () => this.shoot() });
 
 		this.waveMgr = new WaveManager(this, this.enemies, this.pfLeft, this.pfRight);
-		//this.waveMgr.start();
 
 		this.bossMgr = new BossManager(this, this.player, this.bullets, this.enemyBullets, this.ui, this.pfLeft, this.pfRight, this.fx);
 
@@ -168,6 +181,19 @@ export default class GameScene extends Phaser.Scene {
     this.scale.on("resize", (gs: Phaser.Structs.Size) => {
     this.handleResize(gs.width, gs.height);
     });
+
+    this.bgm = this.sound.add('bgm', { loop: true, volume: 0 });
+    this.bgm.play();
+    this.tweens.add({ targets: this.bgm, volume: 0.25, duration: 600 });
+
+     this.sfx = {
+      laser:          createSfx(this, 'laser',          { pool: 8, volume: 0.35 }),
+      enemyDestroyed: createSfx(this, 'enemy_destroyed',{ pool: 4, volume: 0.5, cooldownMs: 30 }),
+      bossFire:       createSfx(this, 'boss_fire',      { pool: 2, volume: 0.25, cooldownMs: 80 }),
+    };
+
+    this.powerUpMgr.setSfx?.(this.sfx);
+    this.bossMgr.setSfx?.(this.sfx);
   }
 
   private createStarfield() {
@@ -250,6 +276,7 @@ export default class GameScene extends Phaser.Scene {
       const sc = enemy.getData("score") as number | undefined;
       const tint = (enemy as any).tintTopLeft ?? 0xffffff;
       this.fx?.explodeSmall(enemy.x, enemy.y, tint);
+      this.sfx?.enemyDestroyed.play();
       enemy.destroy();
       this.addScore(sc ?? 10);
     }
@@ -286,4 +313,23 @@ export default class GameScene extends Phaser.Scene {
 
     if (this.waveMgr && !this.bossMgr?.active) this.waveMgr.resume();
   }
+}
+
+function createSfx(scene: Phaser.Scene, key: string, {
+  pool = 4, volume = 0.5, cooldownMs = 0
+} = {}): Sfx {
+  const sounds = Array.from({ length: pool }, () => scene.sound.add(key, { volume }));
+  let idx = 0;
+  let last = -Infinity;
+  return {
+    play(volMul = 1) {
+      const now = scene.time.now;
+      if (now - last < cooldownMs) return;
+      last = now;
+      const snd = sounds[idx];
+      idx = (idx + 1) % sounds.length;
+      snd.setVolume(volume * volMul);
+      snd.play();
+    }
+  };
 }
