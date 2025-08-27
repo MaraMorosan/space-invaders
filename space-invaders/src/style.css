@@ -1,19 +1,21 @@
-html, body, #game-root {
-  position: fixed;
-  inset: 0;
+html, body {
+  height: 100%;
   margin: 0;
-  padding: 0;
-  background: #0e141b;
+  background: #0b1117;
+  overflow: hidden;
 }
 
 #game-root {
+  position: fixed;
+  inset: 0;
   display: grid;
   place-items: center;
-  touch-action: none;
+  background: #0b1117;
 }
 
 canvas {
   display: block;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  background: transparent !important;
 }
