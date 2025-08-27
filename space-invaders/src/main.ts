@@ -10,6 +10,8 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 800,
     height: 600,
+    min: { width: 360, height: 240 },
+    max: { width: 1600, height: 1200 },
   },
   input: {
     keyboard: true,

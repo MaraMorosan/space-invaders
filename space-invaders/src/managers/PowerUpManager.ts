@@ -4,7 +4,7 @@ import { UIManager } from "./UIManager";
 export type PowerUpType = "triple" | "quad" | "rapid";
 
 export const POWERUP_CFG = {
-  spawnEveryMs: 8000,
+  spawnEveryMs: 12000,
   durationMs: 6000,
   fallSpeed: [140, 180],
 };
@@ -35,13 +35,13 @@ export class PowerUpManager {
     this.pfLeft = pfLeft;
     this.pfRight = pfRight;
 
-    if (!scene.textures.exists("crate")) {
-      const g = scene.add.graphics();
-      g.fillStyle(0xffe066, 1).fillRoundedRect(0, 0, 18, 18, 4);
-      g.lineStyle(2, 0x4a3f35, 1).strokeRoundedRect(0, 0, 18, 18, 4);
-      g.generateTexture("crate", 18, 18);
-      g.destroy();
-    }
+    // if (!scene.textures.exists("crate")) {
+    //   const g = scene.add.graphics();
+    //   g.fillStyle(0xffe066, 1).fillRoundedRect(0, 0, 18, 18, 4);
+    //   g.lineStyle(2, 0x4a3f35, 1).strokeRoundedRect(0, 0, 18, 18, 4);
+    //   g.generateTexture("crate", 18, 18);
+    //   g.destroy();
+    // }
 
     this.crates = scene.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 3 });
 
@@ -137,5 +137,15 @@ export class PowerUpManager {
       b.setVelocity(vx, vy);
       b.setAngle(-a);
     }
+  }
+
+  update() {
+    const H = this.scene.scale.height;
+    this.crates.children.iterate((obj: Phaser.GameObjects.GameObject | null) => {
+      const c = obj as Phaser.Physics.Arcade.Image;
+      if (!c || !c.active) return false;
+      if (c.y > H + 30) c.destroy();
+      return false;
+    });
   }
 }
