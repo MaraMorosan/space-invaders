@@ -6,39 +6,40 @@ export class UIManager {
   private bossTimerText!: Phaser.GameObjects.Text;
   private bossHpBar?: Phaser.GameObjects.Graphics;
   private powerText!: Phaser.GameObjects.Text;
+  private left = 0;
+  private right = 0;
 
-  constructor(scene: Phaser.Scene, pfLeft: number, pfRight: number) {
+  constructor(scene: Phaser.Scene, left: number, right: number) {
     this.scene = scene;
+    this.left = left;
+    this.right = right;
 
-    this.scoreText = scene.add.text(pfLeft + 12, 10, "Score: 0", {
-      fontFamily: "monospace",
-      fontSize: "20px",
-      color: "#C2F970",
+    this.scoreText = scene.add.text(left + 12, 10, "Score: 0", {
+      fontFamily: "monospace", fontSize: "20px", color: "#C2F970",
     }).setDepth(10).setScrollFactor(0);
 
-    this.bossTimerText = scene.add.text(pfRight - 12, 10, "Boss in: --", {
-      fontFamily: "monospace",
-      fontSize: "20px",
-      color: "#00E5FF",
+    this.bossTimerText = scene.add.text(right - 12, 10, "Boss in: 25s", {
+      fontFamily: "monospace", fontSize: "20px", color: "#00E5FF",
     }).setOrigin(1, 0).setDepth(10).setScrollFactor(0);
 
-    this.powerText = scene.add.text(pfLeft + 12, 34, "", {
-        fontFamily: "monospace",
-        fontSize: "14px",
-        color: "#FFD166",
-    }).setDepth(10).setScrollFactor(0);
+    this.powerText = scene.add.text(right - 12, 34, "", {
+      fontFamily: "monospace", fontSize: "16px", color: "#FFD166",
+    }).setOrigin(1, 0).setDepth(10).setScrollFactor(0);
   }
 
-  setScore(score: number) {
-    this.scoreText.setText(`Score: ${score}`);
+  setScore(v: number) { 
+    this.scoreText.setText(`Score: ${v}`); 
+  }
+  setBossTimerText(t: string) { 
+    this.bossTimerText.setText(t); 
   }
 
-  setBossTimerText(text: string) {
-    this.bossTimerText.setText(text);
+  setPowerUpLabel(text: string) { 
+    this.powerText.setText(text ? `POWER-UP: ${text}` : ""); 
   }
-
-  setPowerUpLabel(text: string) { this.powerText.setText(text ? `POWER-UP: ${text}` : ""); }
-  clearPowerUpLabel() { this.powerText.setText(""); }
+  clearPowerUpLabel() { 
+    this.powerText.setText(""); 
+  }
 
   drawBossHpBar(current: number, max: number, centerX: number) {
     const ratio = Phaser.Math.Clamp(current / Math.max(1, max), 0, 1);
@@ -57,5 +58,20 @@ export class UIManager {
   clearBossHpBar() {
     this.bossHpBar?.destroy();
     this.bossHpBar = undefined;
+  }
+
+  resize(left: number, right: number) {
+    this.left = left;
+    this.right = right;
+
+    this.scoreText.setX(this.left + 12);
+
+    this.bossTimerText
+      .setX(this.right - 12)
+      .setOrigin(1, 0);
+
+    this.powerText
+      .setX(this.right - 12)
+      .setOrigin(1, 0);
   }
 }

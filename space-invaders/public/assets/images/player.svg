@@ -1,3 +1,9 @@
-<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-  <polygon points="24,2 34,24 26,24 26,42 22,42 22,24 14,24" fill="#00E5FF" stroke="#003E46" stroke-width="2"></polygon>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#ffffff" stroke="#0d1016" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M32 4 L45 40 L32 36 L19 40 Z"/>
+    <path d="M12 40 L24 34 L18 48 L12 48 Z"/>
+    <path d="M52 40 L40 34 L46 48 L52 48 Z"/>
+    <rect x="28" y="18" width="8" height="7" rx="2" fill="#10141d"/>
+    <rect x="28" y="46" width="8" height="10" rx="2"/>
+  </g>
 </svg>

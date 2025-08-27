@@ -1,6 +1,12 @@
 import Phaser from "phaser";
 import { BOSSES, CFG } from "../config";
 import { UIManager } from "./UIManager";
+import { EffectsManager } from "./EffectsManager";
+
+type SfxBank = {
+  bossFire:       { play: (volMul?: number) => void },
+  enemyDestroyed: { play: (volMul?: number) => void },
+};
 
 export class BossManager {
   public boss?: Phaser.Physics.Arcade.Image;
@@ -25,6 +31,8 @@ export class BossManager {
   private shootEvent?: Phaser.Time.TimerEvent;
   private fireToggleEvent?: Phaser.Time.TimerEvent;
 	private finishing = false;
+  private fx?: EffectsManager;
+  private sfx?: SfxBank;
 
   constructor(
     scene: Phaser.Scene,
@@ -33,7 +41,8 @@ export class BossManager {
     enemyBullets: Phaser.Physics.Arcade.Group,
     ui: UIManager,
     pfLeft: number,
-    pfRight: number
+    pfRight: number,
+    fx?: EffectsManager
   ) {
     this.scene = scene;
     this.player = player;
@@ -42,6 +51,7 @@ export class BossManager {
     this.ui = ui;
     this.pfLeft = pfLeft;
     this.pfRight = pfRight;
+    this.fx = fx;
 
     this.bossGroup = this.scene.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 1 });
 
@@ -57,41 +67,49 @@ export class BossManager {
     );
   }
 
+  public setFx(fx: EffectsManager) { this.fx = fx; }
+  public setSfx(sfx: SfxBank) { this.sfx = sfx; }
+
   spawn(onSpawn?: () => void) {
     if (this.active) return;
-    const spec = Phaser.Utils.Array.GetRandom(BOSSES);
+    if (this.boss || this.bossGroup.countActive(true) > 0) return;
+    this.active = true;
 
+    const spec = Phaser.Utils.Array.GetRandom(BOSSES);
     const cx = (this.pfLeft + this.pfRight) / 2;
-    const boss = this.bossGroup.get(cx, CFG.bossSpawnY, "boss") as Phaser.Physics.Arcade.Image;
+
+    const boss = this.bossGroup.get(cx, CFG.bossSpawnY, spec.key) as Phaser.Physics.Arcade.Image | null;
+    if (!boss) { this.active = false; return; }
+
     boss.setActive(true).setVisible(true);
     boss.setData("__isBoss", true).setName("BOSS");
 
     boss.setScale(spec.scale);
-    boss.setTint(spec.tint).setDepth(50);
+    if (spec.tint !== undefined) boss.setTint(spec.tint); else boss.clearTint();
+    boss.setDepth(50);
 
     const body = boss.body as Phaser.Physics.Arcade.Body;
-    body.setSize(boss.displayWidth, boss.displayHeight, true);
     body.setEnable(true);
+    body.setAllowGravity(false);
 
-    const bottomLimit = this.player.y - 110;
-    const bounds = new Phaser.Geom.Rectangle(this.pfLeft, 0, this.pfRight - this.pfLeft, bottomLimit);
-    body.setBoundsRectangle(bounds);
+    boss.setCollideWorldBounds(false);
+    boss.setBounce(0, 1);
 
-    boss.setCollideWorldBounds(true).setBounce(1, 1);
-    boss.setVelocity(spec.speedX, spec.speedY);
+    const fieldW = (this.pfRight - this.pfLeft) - boss.displayWidth;
+    const tCross = 2.2;
+    const safeVx = Math.max(80, Math.min(spec.speedX, fieldW / Math.max(tCross, 0.8)));
 
-    const mult = Math.min(
-			CFG.bossHpMultiplierBase + this.kills * CFG.bossHpGrowthPerKill,
-			CFG.bossHpCapMultiplier
-		);
-		const minHits = CFG.bossMinHits + this.kills * CFG.bossMinHitsGrowth;
-		const hpScaled = Math.max(Math.round(spec.hp * mult), minHits);
-		this.hp = this.maxHp = hpScaled;
-		boss.setData("hp", this.hp);
+    const dir = Phaser.Math.Between(0, 1) ? 1 : -1;
+    body.setVelocity(safeVx * dir, spec.speedY);
+    body.maxVelocity.x = safeVx;
 
+    const mult = Math.min(CFG.bossHpMultiplierBase + this.kills * CFG.bossHpGrowthPerKill, CFG.bossHpCapMultiplier);
+    const minHits = CFG.bossMinHits + this.kills * CFG.bossMinHitsGrowth;
+    const hpScaled = Math.max(Math.round(spec.hp * mult), minHits);
+    this.hp = this.maxHp = hpScaled;
+    boss.setData("hp", this.hp);
 
     this.boss = boss;
-    this.active = true;
     this.invulnUntil = this.scene.time.now + CFG.bossEntryInvulnMs;
     this.lastHitAt = 0;
 
@@ -102,58 +120,54 @@ export class BossManager {
     this.shooting = true;
     this.fireToggleEvent?.remove(false);
     this.fireToggleEvent = this.scene.time.addEvent({
-      delay: spec.fireWindowMs + spec.firePauseMs,
-      loop: true,
+      delay: spec.fireWindowMs + spec.firePauseMs, loop: true,
       callback: () => (this.shooting = !this.shooting),
     });
     this.shootEvent?.remove(false);
     this.shootEvent = this.scene.time.addEvent({
-      delay: fireDelay,
-      loop: true,
-      callback: () => {
-        if (this.boss && this.boss.active && this.shooting) this.fireBossBullet();
-      },
+      delay: fireDelay, loop: true,
+      callback: () => { if (this.boss && this.boss.active && this.shooting) this.fireBossBullet(); },
     });
 
     boss.once(Phaser.GameObjects.Events.DESTROY, () => {
-			if (this.finishing) return;
-			if (!this.active) return;
-			this.finish(false);
-		});
-
+      if (this.finishing) return;
+      if (!this.active) return;
+      this.finish(false);
+    });
 
     onSpawn?.();
   }
 
+
   finish(defeated = false) {
-		if (this.finishing) return;
-		this.finishing = true;
+    if (this.finishing) return;
+    this.finishing = true;
 
-		this.active = false;
+    const dyingBoss = this.boss;
+    this.active = false;
+    this.boss = undefined;
 
-		const dyingBoss = this.boss;
-		this.boss = undefined;
+    if (dyingBoss && dyingBoss.active) {
+      dyingBoss.destroy();
+    }
 
-		if (dyingBoss && dyingBoss.active) {
-			dyingBoss.destroy();
-		}
+    this.ui.clearBossHpBar();
+    this.enemyBullets.clear(true, true);
+    this.shootEvent?.remove(false);
+    this.fireToggleEvent?.remove(false);
+    this.shootEvent = undefined;
+    this.fireToggleEvent = undefined;
 
-		this.ui.clearBossHpBar();
-		this.enemyBullets.clear(true, true);
-		this.shootEvent?.remove(false);
-		this.fireToggleEvent?.remove(false);
-		this.shootEvent = undefined;
-		this.fireToggleEvent = undefined;
+    if (defeated) {
+      this.kills++;
+      this.ui.setBossTimerText("Boss defeated!");
+      this.scene.cameras.main.shake(220, 0.008);
+      this.sfx?.enemyDestroyed.play();
+    }
 
-		if (defeated) {
-			this.kills++;
-			this.ui.setBossTimerText("Boss defeated!");
-		}
-
-		this.hp = 0;
-		this.maxHp = 0;
-
-		this.finishing = false;
+    this.hp = 0;
+    this.maxHp = 0;
+    this.finishing = false;
   }
 
 
@@ -175,34 +189,67 @@ export class BossManager {
     this.scene.tweens.add({ targets: boss, alpha: 1, duration: 80, ease: "Linear" });
 
     if (this.hp <= 0) {
-      this.finish(true);
+      const x = boss.x, y = boss.y;
+      const tint = (boss as any).tintTopLeft ?? 0xffffff;
+
+      this.fx?.explodeBoss(x, y, tint);
+
+      this.scene.time.delayedCall(0, () => this.finish(true));
       return;
     }
+
+
     this.ui.drawBossHpBar(this.hp, this.maxHp, (this.pfLeft + this.pfRight) / 2);
   }
 
   update() {
-    if (!this.boss) return;
-    const cap = this.player.y - 110;
-    const b = this.boss;
-    if (b.y > cap) {
-      b.y = cap;
-      const body = b.body as Phaser.Physics.Arcade.Body;
-      body.velocity.y = -Math.abs(body.velocity.y) || -80;
-    }
+  if (!this.boss) return;
+  const b = this.boss as Phaser.Physics.Arcade.Image;
+  const body = b.body as Phaser.Physics.Arcade.Body;
+
+  const capY = this.player.y - 110;
+  if (b.y > capY) {
+    b.y = capY;
+    body.velocity.y = -Math.abs(body.velocity.y) || -100;
   }
 
-  private fireBossBullet() {
-    if (!this.boss) return;
-    const b = this.enemyBullets.get(this.boss.x, this.boss.y + 28, "bullet") as Phaser.Physics.Arcade.Image | null;
-    if (!b) return;
-    b.setActive(true).setVisible(true);
-    b.setTint(0xfff38a);
-    const k = Math.min(this.kills, CFG.bossBulletSpeedCapKills);
-		const speed = CFG.bossBulletSpeedBase + k * CFG.bossBulletSpeedPerKill;
-		b.setVelocity(0, speed);
-    b.setAngle(180);
+  const half = b.displayWidth * 0.5;
+  const left  = this.pfLeft  + half;
+  const right = this.pfRight - half;
+
+  if (b.x < left) {
+    b.x = left;
+    body.setVelocityX(Math.abs(body.velocity.x) || 100);
+  } else if (b.x > right) {
+    b.x = right;
+    body.setVelocityX(-Math.abs(body.velocity.x) || -100);
   }
+
+  if (Math.abs(body.velocity.x) < 10) {
+    const kick = (Phaser.Math.Between(0,1) ? 1 : -1) * (body.maxVelocity.x || 120);
+    body.setVelocityX(kick);
+  }
+}
+
+
+private fireBossBullet() {
+  if (!this.boss) return;
+  const b = this.enemyBullets.get(this.boss.x, this.boss.y + 28, "bullet") as Phaser.Physics.Arcade.Image | null;
+  if (!b) return;
+  b.setActive(true).setVisible(true);
+  b.setTint(0xfff38a);
+  const k = Math.min(this.kills, CFG.bossBulletSpeedCapKills);
+	const speed = CFG.bossBulletSpeedBase + k * CFG.bossBulletSpeedPerKill;
+	b.setVelocity(0, speed);
+  b.setAngle(180);
+  this.sfx?.bossFire.play();
+}
+
+setBounds(left: number, right: number) {
+  this.pfLeft = left;
+  this.pfRight = right;
+}
+
 
   get hpCurrent() { return this.hp; }
   get hpMax() { return this.maxHp; }

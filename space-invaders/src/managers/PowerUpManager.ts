@@ -2,9 +2,10 @@ import Phaser from "phaser";
 import { UIManager } from "./UIManager";
 
 export type PowerUpType = "triple" | "quad" | "rapid";
+type SfxBank = { laser: { play(volMul?: number): void } };
 
 export const POWERUP_CFG = {
-  spawnEveryMs: 8000,
+  spawnEveryMs: 20000,
   durationMs: 6000,
   fallSpeed: [140, 180],
 };
@@ -20,6 +21,8 @@ export class PowerUpManager {
   private crates: Phaser.Physics.Arcade.Group;
   private current?: { type: PowerUpType; until: number };
 
+  private sfx?: SfxBank;
+
   constructor(
     scene: Phaser.Scene,
     player: Phaser.Types.Physics.Arcade.ImageWithDynamicBody,
@@ -34,14 +37,6 @@ export class PowerUpManager {
     this.ui = ui;
     this.pfLeft = pfLeft;
     this.pfRight = pfRight;
-
-    if (!scene.textures.exists("crate")) {
-      const g = scene.add.graphics();
-      g.fillStyle(0xffe066, 1).fillRoundedRect(0, 0, 18, 18, 4);
-      g.lineStyle(2, 0x4a3f35, 1).strokeRoundedRect(0, 0, 18, 18, 4);
-      g.generateTexture("crate", 18, 18);
-      g.destroy();
-    }
 
     this.crates = scene.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 3 });
 
@@ -61,6 +56,8 @@ export class PowerUpManager {
       callback: () => this.spawnCrate(),
     });
   }
+
+  public setSfx(sfx: SfxBank) { this.sfx = sfx; }
 
   private spawnCrate() {
     const x = Phaser.Math.Between(this.pfLeft + 30, this.pfRight - 30);
@@ -117,6 +114,7 @@ export class PowerUpManager {
     if (!b) return;
     b.setActive(true).setVisible(true);
     b.setVelocity(0, -520);
+    this.sfx?.laser.play();
   }
 
   private fireSpread(count: number, halfAngle: number) {
@@ -136,6 +134,17 @@ export class PowerUpManager {
       b.setActive(true).setVisible(true);
       b.setVelocity(vx, vy);
       b.setAngle(-a);
+      this.sfx?.laser.play(0.9);
     }
+  }
+
+  update() {
+    const H = this.scene.scale.height;
+    this.crates.children.iterate((obj: Phaser.GameObjects.GameObject | null) => {
+      const c = obj as Phaser.Physics.Arcade.Image;
+      if (!c || !c.active) return false;
+      if (c.y > H + 30) c.destroy();
+      return false;
+    });
   }
 }

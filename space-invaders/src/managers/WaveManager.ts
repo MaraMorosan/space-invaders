@@ -48,9 +48,14 @@ export class WaveManager {
     e.setActive(true).setVisible(true);
     if (spec.scale) e.setScale(spec.scale);
     e.setVelocity(0, Phaser.Math.Between(spec.speed[0], spec.speed[1]));
-    e.setTint(spec.tint);
+    if (spec.tint !== undefined) e.setTint(spec.tint);
     e.setData("hp", spec.hp);
     e.setData("score", spec.score);
     e.setCollideWorldBounds(false);
+  }
+
+  setBounds(left: number, right: number) {
+    this.pfLeft = left;
+    this.pfRight = right;
   }
 }
