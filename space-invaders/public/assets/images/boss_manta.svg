@@ -1,9 +1,53 @@
 <svg width="128" height="64" viewBox="0 0 128 64" xmlns="http://www.w3.org/2000/svg">
-  <g fill="#ffffff" stroke="#0d1016" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M16 34 Q64 10 112 34 Q96 40 64 44 Q32 40 16 34 Z"/>
-    <rect x="58" y="24" width="12" height="8" rx="2" fill="#10141d"/>
-    <rect x="12" y="32" width="10" height="6" rx="2"/>
-    <rect x="106" y="32" width="10" height="6" rx="2"/>
-    <rect x="60" y="44" width="8" height="8" rx="2"/>
+
+  <defs>
+    <linearGradient id="neonCore" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#18FFFF"/>
+    </linearGradient>
+    <linearGradient id="neonMagenta" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F50057"/>
+      <stop offset="100%" stop-color="#D500F9"/>
+    </linearGradient>
+    <linearGradient id="neonLime" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C6FF00"/>
+      <stop offset="100%" stop-color="#76FF03"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFD740"/>
+      <stop offset="100%" stop-color="#FFC107"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .ol { stroke:#263238; stroke-width:2; }
+      .light { fill:#E0F7FA; }
+      .cyan { fill:#00E5FF; }
+      .blue { fill:#40C4FF; }
+      .mag { fill:url(#neonMagenta); }
+      .lime { fill:url(#neonLime); }
+      .gold { fill:url(#gold); }
+      .steel { fill:#37474F; }
+      .panel { fill:#1E88E5; }
+      .vent  { fill:#263238; }
+      .core  { fill:url(#neonCore); filter:url(#glow); }
+    </style>
+  </defs>
+
+<g id="boss_manta">
+  <path class="blue ol" d="M6 28 Q40 6 64 20 Q88 6 122 28 Q92 20 64 30 Q36 20 6 28 Z"/>
+  <g id="edge_leds">
+    <circle cx="16" cy="27" r="1.6" class="mag"/><circle cx="24" cy="27" r="1.6" class="mag"/><circle cx="32" cy="27" r="1.6" class="mag"/><circle cx="40" cy="27" r="1.6" class="mag"/><circle cx="48" cy="27" r="1.6" class="mag"/><circle cx="56" cy="27" r="1.6" class="mag"/><circle cx="64" cy="27" r="1.6" class="mag"/><circle cx="72" cy="27" r="1.6" class="mag"/><circle cx="80" cy="27" r="1.6" class="mag"/><circle cx="88" cy="27" r="1.6" class="mag"/><circle cx="96" cy="27" r="1.6" class="mag"/><circle cx="104" cy="27" r="1.6" class="mag"/><circle cx="112" cy="27" r="1.6" class="mag"/>
   </g>
+  <path class="steel ol" d="M46 22 Q64 12 82 22 L86 38 Q64 48 42 38 Z"/>
+  <ellipse cx="64" cy="30" rx="9" ry="7" class="core ol"/>
+  <circle cx="58" cy="28" r="2.5" class="light ol"/>
+  <circle cx="70" cy="28" r="2.5" class="light ol"/>
+  <path d="M64 30 Q68 44 88 52 Q68 52 62 60" stroke="#18FFFF" stroke-width="3" fill="none"/>
+  <circle cx="62" cy="60" r="3" class="mag"/>
+</g>
 </svg>

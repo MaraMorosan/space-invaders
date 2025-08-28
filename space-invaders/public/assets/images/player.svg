@@ -1,9 +1,47 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <g fill="#ffffff" stroke="#0d1016" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M32 4 L45 40 L32 36 L19 40 Z"/>
-    <path d="M12 40 L24 34 L18 48 L12 48 Z"/>
-    <path d="M52 40 L40 34 L46 48 L52 48 Z"/>
-    <rect x="28" y="18" width="8" height="7" rx="2" fill="#10141d"/>
-    <rect x="28" y="46" width="8" height="10" rx="2"/>
-  </g>
+
+  <defs>
+    <linearGradient id="glow64" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ef9ff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#2ad1ff" stop-opacity="0.65"/>
+    </linearGradient>
+    <linearGradient id="fire64" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff59d"/>
+      <stop offset="55%" stop-color="#ff9800"/>
+      <stop offset="100%" stop-color="#ff5722"/>
+    </linearGradient>
+    <filter id="softGlow64" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .out { fill:#0d0f1a; stroke:#0af; stroke-width:1.5; }
+      .outline { stroke:#0d0f1a; stroke-width:2; }
+      .panel-a { fill:#39d2ff; }
+      .panel-b { fill:#7c4dff; }
+      .panel-c { fill:#ffd54f; }
+      .panel-d { fill:#00e5ff; }
+      .accent { fill:#ff4081; }
+      .core { fill:url(#glow64); filter:url(#softGlow64); }
+      .fire { fill:url(#fire64); filter:url(#softGlow64); }
+    </style>
+  </defs>
+
+<g id="ship">
+  <path id="hull" class="panel-a outline" d="M32 6 L38 18 L44 22 L44 40 L38 36 L32 58 L26 36 L20 40 L20 22 L26 18 Z"/>
+  <ellipse id="cockpit" cx="32" cy="22" rx="6" ry="7" class="core" />
+  <path id="wingL" class="panel-b outline" d="M20 24 L10 28 L8 32 L20 34 Z"/>
+  <path id="wingR" class="panel-b outline" d="M44 24 L54 28 L56 32 L44 34 Z"/>
+  <rect id="cannonL" x="17" y="33" width="4" height="12" class="panel-c" rx="1"/>
+  <rect id="cannonR" x="43" y="33" width="4" height="12" class="panel-c" rx="1"/>
+  <rect id="engineL" x="27" y="44" width="4" height="8" class="panel-d"/>
+  <rect id="engineR" x="33" y="44" width="4" height="8" class="panel-d"/>
+  <path id="flameL" class="fire" d="M29 52 C27 56, 27 60, 29 62 C31 60, 31 56, 29 52 Z"/>
+  <path id="flameR" class="fire" d="M35 52 C33 56, 33 60, 35 62 C37 60, 37 56, 35 52 Z"/>
+  <path d="M32 15 L32 35" stroke="#0af" stroke-width="1" />
+  <circle cx="32" cy="22" r="11" fill="none" stroke="#0af" stroke-width="0.8" opacity="0.5"/>
+</g>
 </svg>

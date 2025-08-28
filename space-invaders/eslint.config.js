@@ -6,20 +6,29 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
-  { ignores: ['dist/**', 'build/**', '.vite/**', 'coverage/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'build/**',
+      '.vite/**',
+      'coverage/**',
+      'eslint.config.js',
+      'vite.config.*',
+    ],
+  },
 
   js.configs.recommended,
 
   ...tseslint.configs.recommendedTypeChecked.map((cfg) => ({
     ...cfg,
+    files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ...cfg.languageOptions,
       parserOptions: {
         ...cfg.languageOptions?.parserOptions,
-        project: ['./tsconfig.json'],
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
-      globals: { ...cfg.languageOptions?.globals, window: 'readonly', document: 'readonly' },
     },
   })),
 
@@ -33,28 +42,14 @@ export default [
     },
     rules: {
       'prettier/prettier': 'error',
-
       'unused-imports/no-unused-imports': 'error',
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
       'import/first': 'error',
       'import/no-duplicates': 'error',
     },
-    languageOptions: {
-      sourceType: 'module',
-      ecmaVersion: 'latest',
-    },
+    languageOptions: { sourceType: 'module', ecmaVersion: 'latest' },
   },
 
-  {
-    files: ['**/*.config.{js,cjs,mjs,ts}', 'vite.config.{js,ts}'],
-    languageOptions: {
-      globals: {
-        process: 'readonly',
-        __dirname: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-      },
-    },
-  },
+  { files: ['**/*.{js,cjs,mjs}'], languageOptions: { parserOptions: { project: null } } },
 ];

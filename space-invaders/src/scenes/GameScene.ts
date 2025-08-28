@@ -6,6 +6,14 @@ import { EffectsManager } from '../managers/EffectsManager';
 import { PowerUpManager } from '../managers/PowerUpManager';
 import { UIManager } from '../managers/UIManager';
 import { WaveManager } from '../managers/WaveManager';
+import {
+  emptyGroup,
+  getDataBool,
+  getFxTint,
+  safeDestroyGroup,
+  setGroupVisible,
+} from '../utils/phaserHelpers';
+import { ensureOutlinedTexture } from '../utils/textureUtils';
 
 type ParticleManager = ReturnType<Phaser.GameObjects.GameObjectFactory['particles']>;
 type Sfx = { play: (volMul?: number) => void };
@@ -52,15 +60,17 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.svg('player', '/assets/images/player.svg');
-    this.load.svg('enemy_small', '/assets/images/enemy_small.svg');
-    this.load.svg('enemy_fast', '/assets/images/enemy_fast.svg');
-    this.load.svg('enemy_tank', '/assets/images/enemy_tank.svg');
-    this.load.svg('boss_beetle', '/assets/images/boss_beetle.svg');
-    this.load.svg('boss_manta', '/assets/images/boss_manta.svg');
-    this.load.svg('boss_brute', '/assets/images/boss_brute.svg');
-    this.load.svg('crate', 'assets/images/logo-white.svg', { width: 18, height: 22 });
-    this.load.svg('heart', '/assets/images/heart.svg');
+    this.load.svg('player', '/assets/images/player.svg', { width: 64, height: 64 });
+    this.load.svg('enemy_small', '/assets/images/enemy_small.svg', { width: 64, height: 64 });
+    this.load.svg('enemy_fast', '/assets/images/enemy_fast.svg', { width: 64, height: 64 });
+    this.load.svg('enemy_tank', '/assets/images/enemy_tank.svg', { width: 64, height: 64 });
+
+    this.load.svg('boss_beetle', '/assets/images/boss_beetle.svg', { width: 256, height: 128 });
+    this.load.svg('boss_brute', '/assets/images/boss_brute.svg', { width: 256, height: 128 });
+    this.load.svg('boss_manta', '/assets/images/boss_manta.svg', { width: 256, height: 128 });
+
+    this.load.svg('heart', '/assets/images/heart.svg', { width: 24, height: 22 });
+    this.load.svg('crate', 'assets/images/logo-white.svg', { width: 14, height: 22 });
 
     this.load.audio('bgm', 'assets/sfx/bgm.ogg');
     this.load.audio('boss_fire', 'assets/sfx/boss_fight.ogg');
@@ -69,7 +79,7 @@ export default class GameScene extends Phaser.Scene {
 
     const g = this.add.graphics();
     g.clear();
-    g.fillStyle(0xffffff, 1).fillRect(0, 0, 2, 10);
+    g.fillStyle(0x00ff00, 1).fillRect(0, 0, 2, 10);
     g.generateTexture('bullet', 2, 10);
 
     g.clear();
@@ -104,6 +114,7 @@ export default class GameScene extends Phaser.Scene {
     this.lives = CFG.playerLivesStart;
     this.livesMax = CFG.playerLivesMax;
     this.bossCountdown = CFG.bossCountdownStart;
+    this.cameras.main.roundPixels = true;
 
     this.cameras.main.resetFX();
     this.cameras.main.setAlpha(1);
@@ -158,6 +169,12 @@ export default class GameScene extends Phaser.Scene {
 
     this.ui = new UIManager(this, this.pfLeft, this.pfRight);
     this.ui.setLives(this.lives, this.livesMax);
+
+    ensureOutlinedTexture(this, 'crate', 'crate_outlined', {
+      color: 0x0e1116,
+      thickness: 2,
+      scale: 1.3,
+    });
 
     this.powerUpMgr = new PowerUpManager(
       this,
@@ -247,6 +264,7 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private loseLife(_reason: 'hit' | 'collide' | 'miss') {
     if (this.gameOverShown) return;
     this.lives = Math.max(0, this.lives - 1);
@@ -275,14 +293,14 @@ export default class GameScene extends Phaser.Scene {
     this.sound.stopAll();
     if (this.input.keyboard) this.input.keyboard.enabled = false;
 
-    this.setGroupVisible(this.enemies, false);
-    this.setGroupVisible(this.bullets, false);
-    this.setGroupVisible(this.enemyBullets, false);
+    setGroupVisible(this.enemies, false);
+    setGroupVisible(this.bullets, false);
+    setGroupVisible(this.enemyBullets, false);
     this.player?.setVisible(false);
 
-    this.emptyGroup(this.bullets);
-    this.emptyGroup(this.enemyBullets);
-    this.emptyGroup(this.enemies);
+    emptyGroup(this.bullets);
+    emptyGroup(this.enemyBullets);
+    emptyGroup(this.enemies);
 
     this.time.delayedCall(0, () => {
       this.ui.showGameOver(this.score, () => {
@@ -389,21 +407,26 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private hitEnemy(bullet: Phaser.Physics.Arcade.Image, enemy: Phaser.Physics.Arcade.Image) {
-    if ((enemy as any).getData?.('__isBoss') || enemy === this.bossMgr.boss) return;
+    const isBoss = getDataBool(enemy, '__isBoss');
+    if (isBoss || enemy === this.bossMgr.boss) return;
 
     bullet.destroy();
+
     const hp = (enemy.getData('hp') as number) - 1;
     enemy.setData('hp', hp);
     this.addScore(2);
+
     if (hp <= 0) {
       const sc = enemy.getData('score') as number | undefined;
-      const tint = (enemy as any).tintTopLeft ?? 0xffffff;
+
+      const tint = getFxTint(enemy, 0xffffff);
       this.fx?.explodeSmall(enemy.x, enemy.y, tint);
       this.sfx?.enemyDestroyed.play();
+
       enemy.destroy();
       this.addScore(sc ?? 10);
     } else {
-      const tint = (enemy as any).tintTopLeft ?? 0xffffff;
+      const tint = getFxTint(enemy, 0xffffff);
       this.fx?.hitSpark(enemy.x, enemy.y, tint);
     }
   }
@@ -413,16 +436,19 @@ export default class GameScene extends Phaser.Scene {
     isOut: (o: Phaser.Physics.Arcade.Image) => boolean,
     onPrune?: (o: Phaser.Physics.Arcade.Image) => void,
   ) {
-    const anyG: any = group;
-    if (!anyG?.children) return;
+    const gg = group as Phaser.Physics.Arcade.Group &
+      Partial<{
+        children: Phaser.Structs.Set<Phaser.GameObjects.GameObject>;
+      }>;
+    if (!gg.children) return;
 
-    group.getChildren().forEach((obj) => {
+    for (const obj of group.getChildren()) {
       const go = obj as Phaser.Physics.Arcade.Image;
       if (go.active && isOut(go)) {
         onPrune?.(go);
         go.destroy();
       }
-    });
+    }
   }
 
   update() {
@@ -462,46 +488,13 @@ export default class GameScene extends Phaser.Scene {
     this.bossMgr?.stopAll?.();
 
     this.powerUpMgr?.destroy?.();
-    this.safeClearDestroy(this.bullets);
-    this.safeClearDestroy(this.enemyBullets);
-    this.safeClearDestroy(this.enemies);
+    safeDestroyGroup(this.bullets);
+    safeDestroyGroup(this.enemyBullets);
+    safeDestroyGroup(this.enemies);
 
     this.player?.destroy();
     this.fx?.destroy?.();
     this.sound.stopAll();
-  }
-
-  private safeClearDestroy(group?: Phaser.Physics.Arcade.Group | Phaser.GameObjects.Group) {
-    const g: any = group as any;
-    if (!g) return;
-
-    if (g.children && typeof g.clear === 'function') {
-      try {
-        g.clear(true, true);
-      } catch {}
-    }
-
-    if (typeof g.destroy === 'function') {
-      try {
-        g.destroy(true);
-      } catch {}
-    }
-  }
-
-  private emptyGroup(g?: Phaser.Physics.Arcade.Group) {
-    const anyG: any = g;
-    if (!anyG?.children) return;
-    for (const obj of g!.getChildren()) {
-      obj?.destroy?.();
-    }
-  }
-
-  private setGroupVisible(g?: Phaser.Physics.Arcade.Group, visible = true) {
-    const anyG: any = g;
-    if (!anyG?.children) return;
-    for (const obj of g!.getChildren()) {
-      (obj as any)?.setVisible?.(visible);
-    }
   }
 }
 

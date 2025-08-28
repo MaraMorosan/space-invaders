@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { BOSSES, CFG } from '../config';
+import { freezeBodyFor, getFxTint, safeDestroyGroup, setFxTint } from '../utils/phaserHelpers';
 import { EffectsManager } from './EffectsManager';
 import { UIManager } from './UIManager';
 
@@ -99,12 +100,15 @@ export class BossManager {
     boss.setActive(true).setVisible(true);
     boss.setData('__isBoss', true).setName('BOSS');
 
-    boss.setScale(spec.scale);
-    if (spec.tint !== undefined) boss.setTint(spec.tint);
-    else boss.clearTint();
+    //boss.setScale(spec.scale);
+    boss.clearTint();
+    if (typeof spec.fxTint === 'number') {
+      setFxTint(boss, spec.fxTint);
+    }
     boss.setDepth(50);
 
     const body = boss.body as Phaser.Physics.Arcade.Body;
+    body.setSize(boss.displayWidth, boss.displayHeight, true);
     body.setEnable(true);
     body.setAllowGravity(false);
 
@@ -214,10 +218,11 @@ export class BossManager {
     if (this.hp <= 0) {
       const x = boss.x,
         y = boss.y;
-      const tint = (boss as any).tintTopLeft ?? 0xffffff;
+      const tint = getFxTint(boss, 0xffffff);
+
+      freezeBodyFor(this.scene, this.player.body as Phaser.Physics.Arcade.Body, 150);
 
       this.fx?.explodeBoss(x, y, tint, { power: 1.35 });
-
       this.scene.time.delayedCall(0, () => this.finish(true));
       return;
     }
@@ -289,12 +294,7 @@ export class BossManager {
     this.fireToggleEvent = undefined;
     this.shootEvent = undefined;
 
-    const bg: any = this.bossGroup;
-    if (bg?.children) {
-      try {
-        bg.clear(true, true);
-      } catch {}
-    }
+    safeDestroyGroup(this.bossGroup);
     this.boss = undefined;
     this.active = false;
   }
