@@ -216,7 +216,7 @@ export class BossManager {
         y = boss.y;
       const tint = (boss as any).tintTopLeft ?? 0xffffff;
 
-      this.fx?.explodeBoss(x, y, tint);
+      this.fx?.explodeBoss(x, y, tint, { power: 1.35 });
 
       this.scene.time.delayedCall(0, () => this.finish(true));
       return;
