@@ -78,7 +78,7 @@ export class EffectsManager {
   }
 
   explodeSmall(x: number, y: number, tint?: number) {
-    (this.eSmall as any).setParticleTint?.(tint ?? 0xffffff);
+    this.eSmall.setParticleTint(tint ?? 0xffffff);
     this.eSmall.explode(24, x, y);
   }
 
@@ -148,7 +148,7 @@ export class EffectsManager {
   }
 
   hitSpark(x: number, y: number, tint?: number) {
-    (this.eHit as any).setParticleTint?.(tint ?? 0xffffff);
+    this.eHit.setParticleTint(tint ?? 0xffffff);
     this.eHit.explode(6, x, y);
   }
 

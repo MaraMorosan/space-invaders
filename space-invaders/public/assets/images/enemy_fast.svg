@@ -1,8 +1,26 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <g fill="#ffffff" stroke="#0d1016" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M32 10 L54 46 L32 38 L10 46 Z"/>
-    <rect x="26" y="24" width="12" height="6" rx="2" fill="#10141d"/>
-    <rect x="14" y="42" width="10" height="4" rx="2"/>
-    <rect x="40" y="42" width="10" height="4" rx="2"/>
-  </g>
+
+  <defs>
+    <linearGradient id="glow64O" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+    <style>
+      .outline { stroke:#0d1016; stroke-width:2; }
+      .panel-a { fill:#FF8F00; }
+      .panel-b { fill:#FFAB40; }
+      .panel-c { fill:#FFD54F; } 
+      .panel-d { fill:#FF6D00; }
+      .accent  { fill:#FF7043; }
+      .core    { fill:url(#glow64O); }
+    </style>
+  </defs>
+
+<g id="enemy" class="outline">
+  <polygon id="dart" class="panel-a" points="10,32 38,18 54,32 38,46"/>
+  <polygon id="core" class="panel-c" points="30,28 38,32 30,36 24,32"/>
+  <rect x="14" y="23" width="3" height="18" class="panel-b" opacity="0.7"/>
+  <rect x="18" y="25" width="2" height="14" class="panel-b" opacity="0.7"/>
+  <rect x="22" y="27" width="1.5" height="10" class="panel-b" opacity="0.7"/>
+</g>
 </svg>

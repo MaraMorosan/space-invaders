@@ -1,10 +1,43 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <g fill="#ffffff" stroke="#0d1016" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
-    <rect x="10" y="22" width="44" height="22" rx="8"/>
-    <rect x="16" y="27" width="8" height="6" rx="1" fill="#10141d"/>
-    <rect x="40" y="27" width="8" height="6" rx="1" fill="#10141d"/>
-    <rect x="6" y="40" width="12" height="6" rx="2"/>
-    <rect x="46" y="40" width="12" height="6" rx="2"/>
-    <rect x="28" y="16" width="8" height="6" rx="2"/>
-  </g>
+
+  <defs>
+    <linearGradient id="glow64" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ef9ff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#2ad1ff" stop-opacity="0.65"/>
+    </linearGradient>
+    <linearGradient id="fire64" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff59d"/>
+      <stop offset="55%" stop-color="#ff9800"/>
+      <stop offset="100%" stop-color="#ff5722"/>
+    </linearGradient>
+    <filter id="softGlow64" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .out { fill:#0d0f1a; stroke:#0af; stroke-width:1.5; }
+      .outline { stroke:#0d0f1a; stroke-width:2; }
+      .panel-a { fill:#39d2ff; }
+      .panel-b { fill:#7c4dff; }
+      .panel-c { fill:#ffd54f; }
+      .panel-d { fill:#00e5ff; }
+      .accent { fill:#ff4081; }
+      .core { fill:url(#glow64); filter:url(#softGlow64); }
+      .fire { fill:url(#fire64); filter:url(#softGlow64); }
+    </style>
+  </defs>
+
+<g id="enemy">
+  <rect x="10" y="22" width="44" height="22" rx="6" class="panel-b outline"/>
+  <rect x="14" y="18" width="36" height="8" rx="4" class="panel-a outline"/>
+  <rect x="28" y="14" width="8" height="6" rx="2" class="panel-c"/>
+  <rect x="24" y="28" width="16" height="10" rx="2" fill="#263238" class="outline"/>
+  <rect x="40" y="26" width="10" height="4" class="panel-c"/>
+  <rect x="12" y="44" width="40" height="4" class="panel-d"/>
+  <circle cx="20" cy="34" r="3" fill="#90a4ae"/>
+  <circle cx="44" cy="34" r="3" fill="#90a4ae"/>
+</g>
 </svg>

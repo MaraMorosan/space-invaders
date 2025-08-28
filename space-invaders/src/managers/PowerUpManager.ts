@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { safeDestroyGroup } from '../utils/phaserHelpers';
 import { UIManager } from './UIManager';
 
 export type PowerUpType = 'triple' | 'quad' | 'rapid' | 'heart';
@@ -28,6 +29,8 @@ export class PowerUpManager {
   private current?: { type: PowerUpType; until: number };
 
   private sfx?: SfxBank;
+
+  private readonly crateKey = 'crate_outlined';
 
   constructor(
     scene: Phaser.Scene,
@@ -70,10 +73,12 @@ export class PowerUpManager {
   pause() {
     if (this.spawnEv) this.spawnEv.paused = true;
   }
+
   resume() {
     if (this.spawnEv) this.spawnEv.paused = false;
   }
-  destroy() {
+
+  destroy(): void {
     this.paused = true;
 
     this.spawnEv?.remove(false);
@@ -82,14 +87,7 @@ export class PowerUpManager {
     const g = this.crates;
     this.crates = undefined;
 
-    if (!g) return;
-
-    try {
-      g.clear?.(true, true);
-    } catch {}
-    try {
-      (g as any).destroy?.(true);
-    } catch {}
+    safeDestroyGroup(g);
   }
 
   public setSfx(sfx: SfxBank) {
@@ -112,11 +110,21 @@ export class PowerUpManager {
     const g = this.crates;
     const x = Phaser.Math.Between(this.pfLeft + 30, this.pfRight - 30);
 
-    const c = g.get(x, -24, 'crate') as Phaser.Physics.Arcade.Image | null;
+    const c = g.get(x, -24, this.crateKey) as Phaser.Physics.Arcade.Image | null;
     if (!c) return;
 
     c.setActive(true).setVisible(true);
     c.setVelocity(0, Phaser.Math.Between(POWERUP_CFG.fallSpeed[0], POWERUP_CFG.fallSpeed[1]));
+    c.setScale(1);
+
+    const radius = Math.max(c.displayWidth, c.displayHeight) * 0.45;
+    (c.body as Phaser.Physics.Arcade.Body).setCircle(
+      Math.round(radius),
+      Math.round(c.displayWidth / 2 - radius),
+      Math.round(c.displayHeight / 2 - radius),
+    );
+
+    c.setDepth(20);
 
     const types: PowerUpType[] = ['triple', 'quad', 'rapid', 'heart'];
     const t = Phaser.Utils.Array.GetRandom(types);

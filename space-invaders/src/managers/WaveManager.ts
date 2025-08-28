@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { CFG, ENEMY_TYPES } from '../config';
+import { setFxTint } from '../utils/phaserHelpers';
 
 export class WaveManager {
   private scene: Phaser.Scene;
@@ -68,9 +69,11 @@ export class WaveManager {
     const e = this.enemies.get(x, -30, spec.key) as Phaser.Physics.Arcade.Image | null;
     if (!e) return;
     e.setActive(true).setVisible(true);
-    if (spec.scale) e.setScale(spec.scale);
+    //if (spec.scale) e.setScale(spec.scale);
+    const body = e.body as Phaser.Physics.Arcade.Body;
+    body.setSize(e.displayWidth, e.displayHeight, true);
     e.setVelocity(0, Phaser.Math.Between(spec.speed[0], spec.speed[1]));
-    if (spec.tint !== undefined) e.setTint(spec.tint);
+    if (typeof spec.fxTint === 'number') setFxTint(e, spec.fxTint);
     e.setData('hp', spec.hp);
     e.setData('score', spec.score);
     e.setCollideWorldBounds(false);

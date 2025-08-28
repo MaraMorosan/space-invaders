@@ -1,10 +1,68 @@
 <svg width="128" height="64" viewBox="0 0 128 64" xmlns="http://www.w3.org/2000/svg">
-  <g fill="#ffffff" stroke="#0d1016" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
-    <rect x="20" y="16" width="88" height="32" rx="8"/>
-    <rect x="36" y="24" width="14" height="10" rx="2" fill="#10141d"/>
-    <rect x="78" y="24" width="14" height="10" rx="2" fill="#10141d"/>
-    <rect x="20" y="44" width="16" height="6" rx="2"/>
-    <rect x="92" y="44" width="16" height="6" rx="2"/>
-    <rect x="58" y="10" width="12" height="8" rx="3"/>
+
+  <defs>
+    <linearGradient id="neonCore" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#18FFFF"/>
+    </linearGradient>
+    <linearGradient id="neonMagenta" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F50057"/>
+      <stop offset="100%" stop-color="#D500F9"/>
+    </linearGradient>
+    <linearGradient id="neonLime" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C6FF00"/>
+      <stop offset="100%" stop-color="#76FF03"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFD740"/>
+      <stop offset="100%" stop-color="#FFC107"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .ol { stroke:#263238; stroke-width:2; }
+      .light { fill:#E0F7FA; }
+      .cyan { fill:#00E5FF; }
+      .blue { fill:#40C4FF; }
+      .mag { fill:url(#neonMagenta); }
+      .lime { fill:url(#neonLime); }
+      .gold { fill:url(#gold); }
+      .steel { fill:#37474F; }
+      .panel { fill:#1E88E5; }
+      .vent  { fill:#263238; }
+      .core  { fill:url(#neonCore); filter:url(#glow); }
+    </style>
+  </defs>
+
+<g id="boss_brute">
+  <path class="panel ol" d="M24 18 Q64 4 104 18 L108 42 Q64 58 20 42 Z"/>
+  <path class="steel ol" d="M30 24 Q64 14 98 24 L100 38 Q64 48 28 38 Z"/>
+  <ellipse id="reactor" cx="64" cy="32" rx="12" ry="10" class="core ol"/>
+  <circle cx="64" cy="32" r="4" class="vent"/>
+  <g id="claw_left">
+    <path class="gold ol" d="M14 20 L30 26 L28 36 L12 30 Z"/>
+    <circle cx="12" cy="30" r="3" class="mag"/>
   </g>
+  <g id="claw_right">
+    <path class="gold ol" d="M114 20 L98 26 L100 36 L116 30 Z"/>
+    <circle cx="116" cy="30" r="3" class="mag"/>
+  </g>
+  <g id="legs">
+    <path class="lime ol" d="M28 46 l-10 10 l5 -13 z"/>
+    <path class="lime ol" d="M100 46 l10 10 l-5 -13 z"/>
+    <path class="lime ol" d="M40 48 l-8 12 l3 -13 z"/>
+    <path class="lime ol" d="M88 48 l8 12 l-3 -13 z"/>
+  </g>
+  <g id="lights">
+    <circle cx="46" cy="30" r="2" class="light"/>
+    <circle cx="82" cy="30" r="2" class="light"/>
+    <rect x="48" y="40" width="32" height="3" class="cyan"/>
+    <rect x="36" y="36" width="6" height="2" class="cyan"/>
+    <rect x="86" y="36" width="6" height="2" class="cyan"/>
+  </g>
+</g>
 </svg>
