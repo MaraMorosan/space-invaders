@@ -1,11 +1,12 @@
-import Phaser from "phaser";
-import { BOSSES, CFG } from "../config";
-import { UIManager } from "./UIManager";
-import { EffectsManager } from "./EffectsManager";
+import Phaser from 'phaser';
+
+import { BOSSES, CFG } from '../config';
+import { EffectsManager } from './EffectsManager';
+import { UIManager } from './UIManager';
 
 type SfxBank = {
-  bossFire:       { play: (volMul?: number) => void },
-  enemyDestroyed: { play: (volMul?: number) => void },
+  bossFire: { play: (volMul?: number) => void };
+  enemyDestroyed: { play: (volMul?: number) => void };
 };
 
 export class BossManager {
@@ -30,7 +31,7 @@ export class BossManager {
   private shooting = false;
   private shootEvent?: Phaser.Time.TimerEvent;
   private fireToggleEvent?: Phaser.Time.TimerEvent;
-	private finishing = false;
+  private finishing = false;
   private fx?: EffectsManager;
   private sfx?: SfxBank;
 
@@ -42,7 +43,7 @@ export class BossManager {
     ui: UIManager,
     pfLeft: number,
     pfRight: number,
-    fx?: EffectsManager
+    fx?: EffectsManager,
   ) {
     this.scene = scene;
     this.player = player;
@@ -53,7 +54,10 @@ export class BossManager {
     this.pfRight = pfRight;
     this.fx = fx;
 
-    this.bossGroup = this.scene.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 1 });
+    this.bossGroup = this.scene.physics.add.group({
+      classType: Phaser.Physics.Arcade.Image,
+      maxSize: 1,
+    });
 
     this.scene.physics.add.overlap(
       this.bullets,
@@ -63,12 +67,16 @@ export class BossManager {
         this.hitBoss(bullet as Phaser.Physics.Arcade.Image, b as Phaser.Physics.Arcade.Image);
       },
       undefined,
-      this
+      this,
     );
   }
 
-  public setFx(fx: EffectsManager) { this.fx = fx; }
-  public setSfx(sfx: SfxBank) { this.sfx = sfx; }
+  public setFx(fx: EffectsManager) {
+    this.fx = fx;
+  }
+  public setSfx(sfx: SfxBank) {
+    this.sfx = sfx;
+  }
 
   spawn(onSpawn?: () => void) {
     if (this.active) return;
@@ -78,14 +86,22 @@ export class BossManager {
     const spec = Phaser.Utils.Array.GetRandom(BOSSES);
     const cx = (this.pfLeft + this.pfRight) / 2;
 
-    const boss = this.bossGroup.get(cx, CFG.bossSpawnY, spec.key) as Phaser.Physics.Arcade.Image | null;
-    if (!boss) { this.active = false; return; }
+    const boss = this.bossGroup.get(
+      cx,
+      CFG.bossSpawnY,
+      spec.key,
+    ) as Phaser.Physics.Arcade.Image | null;
+    if (!boss) {
+      this.active = false;
+      return;
+    }
 
     boss.setActive(true).setVisible(true);
-    boss.setData("__isBoss", true).setName("BOSS");
+    boss.setData('__isBoss', true).setName('BOSS');
 
     boss.setScale(spec.scale);
-    if (spec.tint !== undefined) boss.setTint(spec.tint); else boss.clearTint();
+    if (spec.tint !== undefined) boss.setTint(spec.tint);
+    else boss.clearTint();
     boss.setDepth(50);
 
     const body = boss.body as Phaser.Physics.Arcade.Body;
@@ -95,7 +111,7 @@ export class BossManager {
     boss.setCollideWorldBounds(false);
     boss.setBounce(0, 1);
 
-    const fieldW = (this.pfRight - this.pfLeft) - boss.displayWidth;
+    const fieldW = this.pfRight - this.pfLeft - boss.displayWidth;
     const tCross = 2.2;
     const safeVx = Math.max(80, Math.min(spec.speedX, fieldW / Math.max(tCross, 0.8)));
 
@@ -103,30 +119,40 @@ export class BossManager {
     body.setVelocity(safeVx * dir, spec.speedY);
     body.maxVelocity.x = safeVx;
 
-    const mult = Math.min(CFG.bossHpMultiplierBase + this.kills * CFG.bossHpGrowthPerKill, CFG.bossHpCapMultiplier);
+    const mult = Math.min(
+      CFG.bossHpMultiplierBase + this.kills * CFG.bossHpGrowthPerKill,
+      CFG.bossHpCapMultiplier,
+    );
     const minHits = CFG.bossMinHits + this.kills * CFG.bossMinHitsGrowth;
     const hpScaled = Math.max(Math.round(spec.hp * mult), minHits);
     this.hp = this.maxHp = hpScaled;
-    boss.setData("hp", this.hp);
+    boss.setData('hp', this.hp);
 
     this.boss = boss;
     this.invulnUntil = this.scene.time.now + CFG.bossEntryInvulnMs;
     this.lastHitAt = 0;
 
-    this.ui.setBossTimerText("Boss: ONLINE");
+    this.ui.setBossTimerText('Boss: ONLINE');
     this.ui.drawBossHpBar(this.hp, this.maxHp, (this.pfLeft + this.pfRight) / 2);
 
-    const fireDelay = Math.max(CFG.bossFireDelayFloor, Math.round(spec.fireDelay * Math.pow(0.92, this.kills)));
+    const fireDelay = Math.max(
+      CFG.bossFireDelayFloor,
+      Math.round(spec.fireDelay * Math.pow(0.92, this.kills)),
+    );
     this.shooting = true;
     this.fireToggleEvent?.remove(false);
     this.fireToggleEvent = this.scene.time.addEvent({
-      delay: spec.fireWindowMs + spec.firePauseMs, loop: true,
+      delay: spec.fireWindowMs + spec.firePauseMs,
+      loop: true,
       callback: () => (this.shooting = !this.shooting),
     });
     this.shootEvent?.remove(false);
     this.shootEvent = this.scene.time.addEvent({
-      delay: fireDelay, loop: true,
-      callback: () => { if (this.boss && this.boss.active && this.shooting) this.fireBossBullet(); },
+      delay: fireDelay,
+      loop: true,
+      callback: () => {
+        if (this.boss && this.boss.active && this.shooting) this.fireBossBullet();
+      },
     });
 
     boss.once(Phaser.GameObjects.Events.DESTROY, () => {
@@ -137,7 +163,6 @@ export class BossManager {
 
     onSpawn?.();
   }
-
 
   finish(defeated = false) {
     if (this.finishing) return;
@@ -152,7 +177,6 @@ export class BossManager {
     }
 
     this.ui.clearBossHpBar();
-    this.enemyBullets.clear(true, true);
     this.shootEvent?.remove(false);
     this.fireToggleEvent?.remove(false);
     this.shootEvent = undefined;
@@ -160,7 +184,7 @@ export class BossManager {
 
     if (defeated) {
       this.kills++;
-      this.ui.setBossTimerText("Boss defeated!");
+      this.ui.setBossTimerText('Boss defeated!');
       this.scene.cameras.main.shake(220, 0.008);
       this.sfx?.enemyDestroyed.play();
     }
@@ -169,7 +193,6 @@ export class BossManager {
     this.maxHp = 0;
     this.finishing = false;
   }
-
 
   hitBoss(bullet: Phaser.Physics.Arcade.Image, boss: Phaser.Physics.Arcade.Image) {
     bullet.destroy();
@@ -183,13 +206,14 @@ export class BossManager {
     this.lastHitAt = now;
 
     this.hp -= CFG.playerDamage;
-    boss.setData("hp", this.hp);
+    boss.setData('hp', this.hp);
 
     boss.setAlpha(0.6);
-    this.scene.tweens.add({ targets: boss, alpha: 1, duration: 80, ease: "Linear" });
+    this.scene.tweens.add({ targets: boss, alpha: 1, duration: 80, ease: 'Linear' });
 
     if (this.hp <= 0) {
-      const x = boss.x, y = boss.y;
+      const x = boss.x,
+        y = boss.y;
       const tint = (boss as any).tintTopLeft ?? 0xffffff;
 
       this.fx?.explodeBoss(x, y, tint);
@@ -198,59 +222,87 @@ export class BossManager {
       return;
     }
 
-
     this.ui.drawBossHpBar(this.hp, this.maxHp, (this.pfLeft + this.pfRight) / 2);
   }
 
   update() {
-  if (!this.boss) return;
-  const b = this.boss as Phaser.Physics.Arcade.Image;
-  const body = b.body as Phaser.Physics.Arcade.Body;
+    if (!this.boss) return;
+    const b = this.boss;
+    const body = b.body as Phaser.Physics.Arcade.Body;
 
-  const capY = this.player.y - 110;
-  if (b.y > capY) {
-    b.y = capY;
-    body.velocity.y = -Math.abs(body.velocity.y) || -100;
+    const capY = this.player.y - 110;
+    if (b.y > capY) {
+      b.y = capY;
+      body.velocity.y = -Math.abs(body.velocity.y) || -100;
+    }
+
+    const half = b.displayWidth * 0.5;
+    const left = this.pfLeft + half;
+    const right = this.pfRight - half;
+
+    if (b.x < left) {
+      b.x = left;
+      body.setVelocityX(Math.abs(body.velocity.x) || 100);
+    } else if (b.x > right) {
+      b.x = right;
+      body.setVelocityX(-Math.abs(body.velocity.x) || -100);
+    }
+
+    if (Math.abs(body.velocity.x) < 10) {
+      const kick = (Phaser.Math.Between(0, 1) ? 1 : -1) * (body.maxVelocity.x || 120);
+      body.setVelocityX(kick);
+    }
   }
 
-  const half = b.displayWidth * 0.5;
-  const left  = this.pfLeft  + half;
-  const right = this.pfRight - half;
-
-  if (b.x < left) {
-    b.x = left;
-    body.setVelocityX(Math.abs(body.velocity.x) || 100);
-  } else if (b.x > right) {
-    b.x = right;
-    body.setVelocityX(-Math.abs(body.velocity.x) || -100);
+  private fireBossBullet() {
+    if (!this.boss) return;
+    const b = this.enemyBullets.get(
+      this.boss.x,
+      this.boss.y + 28,
+      'bullet',
+    ) as Phaser.Physics.Arcade.Image | null;
+    if (!b) return;
+    b.setActive(true).setVisible(true);
+    b.setTint(0xfff38a);
+    const k = Math.min(this.kills, CFG.bossBulletSpeedCapKills);
+    const speed = CFG.bossBulletSpeedBase + k * CFG.bossBulletSpeedPerKill;
+    b.setVelocity(0, speed);
+    b.setAngle(180);
+    this.sfx?.bossFire.play();
   }
 
-  if (Math.abs(body.velocity.x) < 10) {
-    const kick = (Phaser.Math.Between(0,1) ? 1 : -1) * (body.maxVelocity.x || 120);
-    body.setVelocityX(kick);
+  setBounds(left: number, right: number) {
+    this.pfLeft = left;
+    this.pfRight = right;
   }
-}
 
+  get hpCurrent() {
+    return this.hp;
+  }
+  get hpMax() {
+    return this.maxHp;
+  }
 
-private fireBossBullet() {
-  if (!this.boss) return;
-  const b = this.enemyBullets.get(this.boss.x, this.boss.y + 28, "bullet") as Phaser.Physics.Arcade.Image | null;
-  if (!b) return;
-  b.setActive(true).setVisible(true);
-  b.setTint(0xfff38a);
-  const k = Math.min(this.kills, CFG.bossBulletSpeedCapKills);
-	const speed = CFG.bossBulletSpeedBase + k * CFG.bossBulletSpeedPerKill;
-	b.setVelocity(0, speed);
-  b.setAngle(180);
-  this.sfx?.bossFire.play();
-}
+  public destroy() {
+    this.fireToggleEvent?.remove(false);
+    this.shootEvent?.remove(false);
+    this.fireToggleEvent = undefined;
+    this.shootEvent = undefined;
 
-setBounds(left: number, right: number) {
-  this.pfLeft = left;
-  this.pfRight = right;
-}
+    const bg: any = this.bossGroup;
+    if (bg?.children) {
+      try {
+        bg.clear(true, true);
+      } catch {}
+    }
+    this.boss = undefined;
+    this.active = false;
+  }
 
-
-  get hpCurrent() { return this.hp; }
-  get hpMax() { return this.maxHp; }
+  public stopAll() {
+    this.fireToggleEvent?.remove(false);
+    this.shootEvent?.remove(false);
+    this.fireToggleEvent = undefined;
+    this.shootEvent = undefined;
+  }
 }

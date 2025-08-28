@@ -1,14 +1,26 @@
-import Phaser from "phaser";
-import { CFG, ENEMY_TYPES } from "../config";
+import Phaser from 'phaser';
+
+import { CFG, ENEMY_TYPES } from '../config';
 
 export class WaveManager {
   private scene: Phaser.Scene;
   private enemies: Phaser.Physics.Arcade.Group;
   private pfLeft: number;
   private pfRight: number;
-  private timer?: Phaser.Time.TimerEvent;
 
-  constructor(scene: Phaser.Scene, enemies: Phaser.Physics.Arcade.Group, pfLeft: number, pfRight: number) {
+  private timers: Phaser.Time.TimerEvent[] = [];
+  private addTimer(cfg: Phaser.Types.Time.TimerEventConfig) {
+    const ev = this.scene.time.addEvent(cfg);
+    this.timers.push(ev);
+    return ev;
+  }
+
+  constructor(
+    scene: Phaser.Scene,
+    enemies: Phaser.Physics.Arcade.Group,
+    pfLeft: number,
+    pfRight: number,
+  ) {
     this.scene = scene;
     this.enemies = enemies;
     this.pfLeft = pfLeft;
@@ -16,15 +28,25 @@ export class WaveManager {
   }
 
   start() {
-    this.timer = this.scene.time.addEvent({
+    this.stop();
+    this.addTimer({
       delay: CFG.waveEveryMs,
       loop: true,
       callback: () => this.launchWave(),
     });
   }
 
-  pause() { if (this.timer) this.timer.paused = true; }
-  resume() { if (this.timer) this.timer.paused = false; }
+  pause() {
+    this.timers.forEach((t) => (t.paused = true));
+  }
+  resume() {
+    this.timers.forEach((t) => (t.paused = false));
+  }
+
+  stop() {
+    for (const t of this.timers) t?.remove?.(false);
+    this.timers.length = 0;
+  }
 
   private launchWave() {
     const count = Phaser.Math.Between(CFG.waveCountMin, CFG.waveCountMax);
@@ -49,8 +71,8 @@ export class WaveManager {
     if (spec.scale) e.setScale(spec.scale);
     e.setVelocity(0, Phaser.Math.Between(spec.speed[0], spec.speed[1]));
     if (spec.tint !== undefined) e.setTint(spec.tint);
-    e.setData("hp", spec.hp);
-    e.setData("score", spec.score);
+    e.setData('hp', spec.hp);
+    e.setData('score', spec.score);
     e.setCollideWorldBounds(false);
   }
 

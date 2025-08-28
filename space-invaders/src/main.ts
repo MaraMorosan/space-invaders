@@ -1,5 +1,6 @@
-import Phaser from "phaser";
-import GameScene from "./scenes/GameScene";
+import Phaser from 'phaser';
+
+import GameScene from './scenes/GameScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -14,7 +15,7 @@ const config: Phaser.Types.Core.GameConfig = {
     max: { width: 1600, height: 1200 },
   },
   physics: {
-    default: "arcade",
+    default: 'arcade',
     arcade: { gravity: { x: 0, y: 0 }, debug: false },
   },
   scene: [GameScene],

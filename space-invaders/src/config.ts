@@ -1,5 +1,7 @@
 export const CFG = {
   playerDamage: 2,
+  playerLivesMax: 5,
+  playerLivesStart: 5,
   autoFireMs: 180,
   waveEveryMs: 3000,
   waveBurstDelay: 220,
@@ -14,14 +16,14 @@ export const CFG = {
   bossMinHitsGrowth: 6,
 
   bossHpMultiplierBase: 0.7,
-  bossHpGrowthPerKill: 0.20,
-  bossHpCapMultiplier: 3.0, 
+  bossHpGrowthPerKill: 0.2,
+  bossHpCapMultiplier: 3.0,
   bossFireDelayFloor: 140,
   bossBulletSpeedBase: 200,
   bossBulletSpeedPerKill: 20,
   bossBulletSpeedCapKills: 12,
   enemyBulletPenaltyBase: 40,
-  enemyBulletPenaltyPerKill: 4,  
+  enemyBulletPenaltyPerKill: 4,
 };
 
 export type EnemySpec = {
@@ -34,9 +36,9 @@ export type EnemySpec = {
 };
 
 export const ENEMY_TYPES: EnemySpec[] = [
-  { key: "enemy_small", hp: 1, speed: [90,130],  tint: 0xff3b3b, score: 10 },
-  { key: "enemy_fast", hp: 2, speed: [100,140], tint: 0xffd93d, score: 20 },
-  { key: "enemy_tank", hp: 3, speed: [70,110],  tint: 0x7ae582, score: 30 },
+  { key: 'enemy_small', hp: 1, speed: [90, 130], tint: 0xff3b3b, score: 10 },
+  { key: 'enemy_fast', hp: 2, speed: [100, 140], tint: 0xffd93d, score: 20 },
+  { key: 'enemy_tank', hp: 3, speed: [70, 110], tint: 0x7ae582, score: 30 },
 ];
 
 export type BossSpec = {
@@ -52,7 +54,37 @@ export type BossSpec = {
 };
 
 export const BOSSES: BossSpec[] = [
-  { key: "boss_beetle", hp: 50, tint: 0x8a2be2, scale: 2.0, speedX: 110, speedY: 24, fireDelay: 320, fireWindowMs: 1100, firePauseMs: 900 },
-  { key: "boss_manta",  hp: 70, tint: 0x00e5ff, scale: 2.2, speedX:  90, speedY: 20, fireDelay: 260, fireWindowMs:  900, firePauseMs: 1100 },
-  { key: "boss_brute",  hp: 90, tint: 0xff6b6b, scale: 2.3, speedX: 130, speedY: 18, fireDelay: 360, fireWindowMs: 1300, firePauseMs: 1000 },
+  {
+    key: 'boss_beetle',
+    hp: 50,
+    tint: 0x8a2be2,
+    scale: 2.0,
+    speedX: 110,
+    speedY: 24,
+    fireDelay: 320,
+    fireWindowMs: 1100,
+    firePauseMs: 900,
+  },
+  {
+    key: 'boss_manta',
+    hp: 70,
+    tint: 0x00e5ff,
+    scale: 2.2,
+    speedX: 90,
+    speedY: 20,
+    fireDelay: 260,
+    fireWindowMs: 900,
+    firePauseMs: 1100,
+  },
+  {
+    key: 'boss_brute',
+    hp: 90,
+    tint: 0xff6b6b,
+    scale: 2.3,
+    speedX: 130,
+    speedY: 18,
+    fireDelay: 360,
+    fireWindowMs: 1300,
+    firePauseMs: 1000,
+  },
 ];
