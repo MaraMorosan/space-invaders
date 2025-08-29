@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { safeDestroyGroup } from '../utils/phaserHelpers';
 import { UIManager } from './UIManager';
 
-export type PowerUpType = 'triple' | 'quad' | 'rapid' | 'heart';
+export type PowerUpType = 'triple' | 'beam' | 'rapid' | 'heart';
 type SfxBank = { laser: { play(volMul?: number): void } };
 
 export const POWERUP_CFG = {
@@ -23,6 +23,17 @@ export class PowerUpManager {
   private paused = false;
   private lastSpawnAt = -Infinity;
 
+  private enemies: Phaser.Physics.Arcade.Group;
+  private beamRect?: Phaser.GameObjects.Rectangle;
+  private beamSound?: Phaser.Sound.BaseSound;
+
+  private labelSeq = 0;
+  private activeLabelToken = 0;
+  private labelOwner: 'beam' | 'other' | null = null;
+  private beamUntil = 0;
+
+  private getBoss?: () => Phaser.Physics.Arcade.Image | null;
+
   private spawnEv?: Phaser.Time.TimerEvent;
   private crates?: Phaser.Physics.Arcade.Group;
 
@@ -36,18 +47,22 @@ export class PowerUpManager {
     scene: Phaser.Scene,
     player: Phaser.Types.Physics.Arcade.ImageWithDynamicBody,
     bullets: Phaser.Physics.Arcade.Group,
+    enemies: Phaser.Physics.Arcade.Group,
     ui: UIManager,
     pfLeft: number,
     pfRight: number,
     onHeartPickup?: () => void,
+    getBoss?: () => Phaser.Physics.Arcade.Image | null,
   ) {
     this.scene = scene;
     this.player = player;
     this.bullets = bullets;
+    this.enemies = enemies;
     this.ui = ui;
     this.pfLeft = pfLeft;
     this.pfRight = pfRight;
     this.onHeartPickup = onHeartPickup;
+    this.getBoss = getBoss;
 
     this.crates = scene.physics.add.group({ classType: Phaser.Physics.Arcade.Image, maxSize: 3 });
 
@@ -83,6 +98,7 @@ export class PowerUpManager {
 
     this.spawnEv?.remove(false);
     this.spawnEv = undefined;
+    this.stopBeam();
 
     const g = this.crates;
     this.crates = undefined;
@@ -126,12 +142,12 @@ export class PowerUpManager {
 
     c.setDepth(20);
 
-    const types: PowerUpType[] = ['triple', 'quad', 'rapid', 'heart'];
+    const types: PowerUpType[] = ['triple', 'beam', 'rapid', 'heart'];
     const t = Phaser.Utils.Array.GetRandom(types);
 
     c.setData('type', t);
     const tint =
-      t === 'triple' ? 0x6df7c1 : t === 'quad' ? 0x9bf6ff : t === 'rapid' ? 0xffd6a5 : 0xff4d6d;
+      t === 'triple' ? 0x32cd32 : t === 'beam' ? 0x80ffea : t === 'rapid' ? 0xffd6a5 : 0xff4d6d;
 
     c.setTint(tint);
   }
@@ -142,35 +158,43 @@ export class PowerUpManager {
 
     if (type === 'heart') {
       this.onHeartPickup?.();
+      this.labelOwner = 'other';
       this.ui.setPowerUpLabel('LIFE +1');
-      this.scene.time.delayedCall(1000, () => this.ui.clearPowerUpLabel());
+      this.scene.time.delayedCall(5000, () => {
+        if (this.labelOwner === 'other') this.ui.clearPowerUpLabel();
+      });
+      return;
+    }
+
+    if (type === 'beam') {
+      this.labelOwner = 'beam';
+      this.ui.setPowerUpLabel('LASER BEAM');
+      this.startBeam(4000);
       return;
     }
 
     this.current = { type, until: this.scene.time.now + POWERUP_CFG.durationMs };
-    this.ui.setPowerUpLabel(type.toUpperCase());
+    this.labelOwner = 'other';
 
-    this.scene.time.delayedCall(POWERUP_CFG.durationMs + 50, () => {
-      if (this.current && this.scene.time.now >= this.current.until) {
-        this.current = undefined;
-        this.ui.clearPowerUpLabel();
-      }
-    });
+    this.setPowerLabel(type.toUpperCase(), POWERUP_CFG.durationMs);
   }
 
   shoot() {
+    if (this.beamRect) return;
+
     const now = this.scene.time.now;
-    if (!this.current || now >= this.current.until) {
+    if (!this.current) {
+      return this.fireStraight();
+    }
+
+    if (now >= this.current.until) {
       this.current = undefined;
-      this.ui.clearPowerUpLabel();
       return this.fireStraight();
     }
 
     switch (this.current.type) {
       case 'triple':
         return this.fireSpread(3, 12);
-      case 'quad':
-        return this.fireSpread(4, 16);
       case 'rapid':
         this.fireStraight();
         this.scene.time.delayedCall(55, () => this.fireStraight());
@@ -214,16 +238,112 @@ export class PowerUpManager {
       b.setActive(true).setVisible(true);
       b.setVelocity(vx, vy);
       b.setAngle(-a);
-      this.sfx?.laser.play(0.9);
+      this.sfx?.laser.play(0.5);
     }
+  }
+
+  private setPowerLabel(text: string, autoClearMs?: number): number {
+    const token = ++this.labelSeq;
+    this.activeLabelToken = token;
+    this.ui.setPowerUpLabel(text);
+
+    if (autoClearMs && autoClearMs > 0) {
+      this.scene.time.delayedCall(autoClearMs, () => {
+        if (this.activeLabelToken === token) this.ui.clearPowerUpLabel();
+      });
+    }
+    return token;
+  }
+
+  private startBeam(durationMs: number) {
+    this.stopBeam();
+
+    this.beamUntil = this.scene.time.now + durationMs;
+
+    this.beamSound = this.scene.sound.add('laser_beam', { loop: true, volume: 0.05 });
+    this.beamSound.play();
+
+    const width = 8;
+    const height = Math.max(40, this.player.y - 8);
+    this.beamRect = this.scene.add
+      .rectangle(this.player.x, this.player.y - 28, width, height, 0x80ffea, 0.85)
+      .setOrigin(0.5, 1)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(19);
+  }
+
+  private stopBeam() {
+    this.beamRect?.destroy();
+    this.beamRect = undefined;
+    if (this.beamSound) {
+      this.beamSound.stop();
+      this.beamSound.destroy();
+      this.beamSound = undefined;
+    }
+    this.beamUntil = 0;
+
+    if (this.labelOwner === 'beam') {
+      this.ui.clearPowerUpLabel();
+    }
+    this.labelOwner = null;
+  }
+
+  private applyBeamDamageContinuous() {
+    const rect = this.beamRect;
+    if (!rect) return;
+
+    const halfW = rect.width / 2;
+    const px = this.player.x;
+    const py = this.player.y;
+
+    const enemies = this.enemies.getChildren() as Phaser.Physics.Arcade.Image[];
+    for (const enemy of enemies) {
+      if (!enemy.active || !enemy.visible) continue;
+      if (enemy.y >= py) continue;
+      if (Math.abs(enemy.x - px) > halfW) continue;
+
+      const b = this.bullets.get(enemy.x, enemy.y, 'bullet') as Phaser.Physics.Arcade.Image | null;
+      if (!b) continue;
+      b.setActive(true).setVisible(false).setVelocity(0, 0);
+      this.scene.time.delayedCall(34, () => {
+        if (b.active) b.destroy();
+      });
+    }
+
+    const boss = this.getBoss?.();
+    if (boss && boss.active && boss.visible) {
+      if (boss.y < py && Math.abs(boss.x - px) <= halfW) {
+        const bb = this.bullets.get(boss.x, boss.y, 'bullet') as Phaser.Physics.Arcade.Image | null;
+        if (bb) {
+          bb.setActive(true).setVisible(false).setVelocity(0, 0);
+          this.scene.time.delayedCall(34, () => {
+            if (bb.active) bb.destroy();
+          });
+        }
+      }
+    }
+  }
+
+  private updateBeamVisual() {
+    if (!this.beamRect) return;
+    const rect = this.beamRect;
+    rect.setPosition(this.player.x, this.player.y - 28);
+    rect.setSize(rect.width, Math.max(40, this.player.y - 8));
   }
 
   update() {
     const g = this.crates;
     if (!g) return;
 
-    const H = this.scene.scale.height;
+    if (this.beamRect) {
+      this.updateBeamVisual();
+      this.applyBeamDamageContinuous();
+      if (this.beamUntil && this.scene.time.now >= this.beamUntil) {
+        this.stopBeam();
+      }
+    }
 
+    const H = this.scene.scale.height;
     for (const obj of g.getChildren() as Phaser.Physics.Arcade.Image[]) {
       if (!obj || !obj.active) continue;
       if (obj.y > H + 30) obj.destroy();
