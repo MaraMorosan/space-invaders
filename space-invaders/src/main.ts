@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 
 import GameScene from './scenes/GameScene';
+import { MenuScene } from './scenes/MenuScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-holder',
   backgroundColor: '#0b1117',
+  dom: { createContainer: true },
+  render: { antialias: true },
   pixelArt: true,
-  render: { pixelArt: true, antialias: false, roundPixels: true },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -20,7 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
     default: 'arcade',
     arcade: { gravity: { x: 0, y: 0 }, debug: false },
   },
-  scene: [GameScene],
+  scene: [MenuScene, GameScene],
 };
 
 new Phaser.Game(config);

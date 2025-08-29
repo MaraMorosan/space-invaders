@@ -69,7 +69,6 @@ export class WaveManager {
     const e = this.enemies.get(x, -30, spec.key) as Phaser.Physics.Arcade.Image | null;
     if (!e) return;
     e.setActive(true).setVisible(true);
-    //if (spec.scale) e.setScale(spec.scale);
     const body = e.body as Phaser.Physics.Arcade.Body;
     body.setSize(e.displayWidth, e.displayHeight, true);
     e.setVelocity(0, Phaser.Math.Between(spec.speed[0], spec.speed[1]));

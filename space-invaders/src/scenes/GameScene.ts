@@ -17,6 +17,7 @@ import { ensureOutlinedTexture } from '../utils/textureUtils';
 
 type ParticleManager = ReturnType<Phaser.GameObjects.GameObjectFactory['particles']>;
 type Sfx = { play: (volMul?: number) => void };
+type AnySound = Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound;
 
 export default class GameScene extends Phaser.Scene {
   private player!: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
@@ -52,11 +53,25 @@ export default class GameScene extends Phaser.Scene {
   private autoFireEv?: Phaser.Time.TimerEvent;
   private bossTickEv?: Phaser.Time.TimerEvent;
   private onResize = () => this.handleResize();
+  private initialBgmMuted = false;
+  private sfx!: {
+    laser: Sfx;
+    enemyDestroyed: Sfx;
+    bossFire: Sfx;
+  };
+
+  private bgm!: AnySound;
+  private readonly BGM_BASE_VOL = 0.05;
 
   private _cleaned = false;
 
   constructor() {
     super('GameScene');
+  }
+
+  init(data: { bgmMuted?: boolean } = {}) {
+    const fromLS = localStorage.getItem('bgmMuted');
+    this.initialBgmMuted = typeof data?.bgmMuted === 'boolean' ? data.bgmMuted : fromLS === 'true';
   }
 
   preload() {
@@ -69,13 +84,14 @@ export default class GameScene extends Phaser.Scene {
     this.load.svg('boss_brute', '/assets/images/boss_brute.svg', { width: 256, height: 128 });
     this.load.svg('boss_manta', '/assets/images/boss_manta.svg', { width: 256, height: 128 });
 
-    this.load.svg('heart', '/assets/images/heart.svg', { width: 24, height: 22 });
+    this.load.svg('heart', '/assets/images/heart.svg', { width: 48, height: 44 });
     this.load.svg('crate', 'assets/images/logo-white.svg', { width: 14, height: 22 });
 
     this.load.audio('bgm', 'assets/sfx/bgm.ogg');
     this.load.audio('boss_fire', 'assets/sfx/boss_fight.ogg');
     this.load.audio('enemy_destroyed', 'assets/sfx/enemy_destroyed.ogg');
     this.load.audio('laser', 'assets/sfx/laser.ogg');
+    this.load.audio('game_over', 'assets/sfx/game_over.ogg');
 
     const g = this.add.graphics();
     g.clear();
@@ -100,14 +116,6 @@ export default class GameScene extends Phaser.Scene {
     g.destroy();
   }
 
-  private sfx!: {
-    laser: Sfx;
-    enemyDestroyed: Sfx;
-    bossFire: Sfx;
-  };
-
-  private bgm!: Phaser.Sound.BaseSound;
-
   create() {
     this.gameOverShown = false;
     this.score = 0;
@@ -121,12 +129,12 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.resume();
     this.input.keyboard!.enabled = true;
     this.input.keyboard?.resetKeys();
+    this.input.keyboard?.on('keydown-ESC', () => this.requestPause());
+    this.input.keyboard?.on('keydown-P', () => this.requestPause());
 
     const W = this.cameras.main.width;
     const H = this.cameras.main.height;
 
-    this.input.keyboard!.enabled = true;
-    this.input.keyboard?.resetKeys();
     this.physics.world.resume();
     this.tweens.resumeAll();
     this.sound.stopAll();
@@ -167,6 +175,7 @@ export default class GameScene extends Phaser.Scene {
       maxSize: 120,
     });
 
+    this.textures.get('heart').setFilter(1);
     this.ui = new UIManager(this, this.pfLeft, this.pfRight);
     this.ui.setLives(this.lives, this.livesMax);
 
@@ -240,12 +249,17 @@ export default class GameScene extends Phaser.Scene {
       },
     });
 
-    this.bgm = this.sound.add('bgm', { loop: true, volume: 0 });
+    this.bgm = this.sound.add('bgm', { loop: true, volume: 0 }) as AnySound;
     this.bgm.play();
-    this.tweens.add({ targets: this.bgm, volume: 0.05, duration: 600 });
+
+    this.tweens.add({
+      targets: this.bgm,
+      volume: this.initialBgmMuted ? 0 : this.BGM_BASE_VOL,
+      duration: 600,
+    });
 
     this.sfx = {
-      laser: createSfx(this, 'laser', { pool: 8, volume: 0.15 }),
+      laser: createSfx(this, 'laser', { pool: 8, volume: 0.1 }),
       enemyDestroyed: createSfx(this, 'enemy_destroyed', { pool: 4, volume: 0.04, cooldownMs: 30 }),
       bossFire: createSfx(this, 'boss_fire', { pool: 2, volume: 0.05, cooldownMs: 80 }),
     };
@@ -303,6 +317,8 @@ export default class GameScene extends Phaser.Scene {
     emptyGroup(this.enemies);
 
     this.time.delayedCall(0, () => {
+      this.sound.play('game_over', { volume: 0.05, loop: false });
+
       this.ui.showGameOver(this.score, () => {
         this.ui.hideGameOver();
         this.input.enabled = false;
@@ -495,6 +511,13 @@ export default class GameScene extends Phaser.Scene {
     this.player?.destroy();
     this.fx?.destroy?.();
     this.sound.stopAll();
+  }
+
+  private requestPause() {
+    if (this.gameOverShown) return;
+    if (this.scene.isActive('MenuScene')) return;
+    this.scene.launch('MenuScene', { mode: 'pause' });
+    this.scene.pause();
   }
 }
 
