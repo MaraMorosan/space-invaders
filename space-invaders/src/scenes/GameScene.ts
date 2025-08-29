@@ -92,6 +92,7 @@ export default class GameScene extends Phaser.Scene {
     this.load.audio('enemy_destroyed', 'assets/sfx/enemy_destroyed.ogg');
     this.load.audio('laser', 'assets/sfx/laser.ogg');
     this.load.audio('game_over', 'assets/sfx/game_over.ogg');
+    this.load.audio('laser_beam', 'assets/sfx/laser_beam.ogg');
 
     const g = this.add.graphics();
     g.clear();
@@ -189,10 +190,12 @@ export default class GameScene extends Phaser.Scene {
       this,
       this.player,
       this.bullets,
+      this.enemies,
       this.ui,
       this.pfLeft,
       this.pfRight,
       () => this.gainLife(),
+      () => this.bossMgr?.boss as Phaser.Physics.Arcade.Image | null,
     );
 
     this.waveMgr = new WaveManager(this, this.enemies, this.pfLeft, this.pfRight);
@@ -274,8 +277,27 @@ export default class GameScene extends Phaser.Scene {
     if (this.lives < this.livesMax) {
       this.lives++;
       this.ui.setLives(this.lives, this.livesMax);
-      this.cameras.main.flash(120, 80, 255, 120);
+      this.lifeFlashSoft();
     }
+  }
+
+  private lifeFlashSoft() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    const overlay = this.add
+      .rectangle(0, 0, W, H, 0x55efc4, 0.16)
+      .setOrigin(0)
+      .setScrollFactor(0)
+      .setDepth(10_000);
+
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 220,
+      ease: 'Cubic.Out',
+      onComplete: () => overlay.destroy(),
+    });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

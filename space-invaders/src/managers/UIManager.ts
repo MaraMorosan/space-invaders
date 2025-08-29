@@ -79,6 +79,8 @@ export class UIManager {
       .setOrigin(0, 0)
       .setDepth(10)
       .setScrollFactor(0);
+
+    this.layoutHudDom();
   }
 
   setLives(current: number, max: number) {
@@ -150,19 +152,6 @@ export class UIManager {
   resize(left: number, right: number) {
     this.left = left;
     this.right = right;
-
-    this.scoreDom
-      ?.updateSize()
-      .setOrigin(0, 0)
-      .setPosition(this.left + 12, 10);
-    this.bossTimerDom
-      ?.updateSize()
-      .setOrigin(1, 0)
-      .setPosition(this.right - 12, 10);
-    this.powerDom
-      ?.updateSize()
-      .setOrigin(1, 0)
-      .setPosition(this.right - 12, 34);
 
     if (this.hearts.length) {
       const baseX = this.left + 12;

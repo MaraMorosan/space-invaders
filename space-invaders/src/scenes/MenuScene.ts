@@ -92,7 +92,6 @@ export class MenuScene extends Phaser.Scene {
     `;
     const titleDom = this.add.dom(0, curY).createFromHTML(titleHtml).setOrigin(0.5, 0);
     this.panel.add(titleDom);
-    //curY += (titleDom.node as HTMLElement).offsetHeight + 6;
 
     const msgLinesStart = [
       'Start your space adventure!',
