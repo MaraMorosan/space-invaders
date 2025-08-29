@@ -100,7 +100,6 @@ export class BossManager {
     boss.setActive(true).setVisible(true);
     boss.setData('__isBoss', true).setName('BOSS');
 
-    //boss.setScale(spec.scale);
     boss.clearTint();
     if (typeof spec.fxTint === 'number') {
       setFxTint(boss, spec.fxTint);

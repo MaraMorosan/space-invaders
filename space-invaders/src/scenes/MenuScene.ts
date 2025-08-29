@@ -27,6 +27,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   preload() {
+    this.load.setBaseURL(import.meta.env.BASE_URL);
     if (!this.textures.exists('powerup_logo')) {
       this.load.svg('powerup_logo', 'assets/images/logo-white.svg', { width: 24, height: 24 });
     }
