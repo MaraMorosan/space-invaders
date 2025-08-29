@@ -75,16 +75,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.svg('player', '/assets/images/player.svg', { width: 64, height: 64 });
-    this.load.svg('enemy_small', '/assets/images/enemy_small.svg', { width: 64, height: 64 });
-    this.load.svg('enemy_fast', '/assets/images/enemy_fast.svg', { width: 64, height: 64 });
-    this.load.svg('enemy_tank', '/assets/images/enemy_tank.svg', { width: 64, height: 64 });
+    this.load.setBaseURL(import.meta.env.BASE_URL);
 
-    this.load.svg('boss_beetle', '/assets/images/boss_beetle.svg', { width: 256, height: 128 });
-    this.load.svg('boss_brute', '/assets/images/boss_brute.svg', { width: 256, height: 128 });
-    this.load.svg('boss_manta', '/assets/images/boss_manta.svg', { width: 256, height: 128 });
+    this.load.svg('player', 'assets/images/player.svg', { width: 64, height: 64 });
+    this.load.svg('enemy_small', 'assets/images/enemy_small.svg', { width: 64, height: 64 });
+    this.load.svg('enemy_fast', 'assets/images/enemy_fast.svg', { width: 64, height: 64 });
+    this.load.svg('enemy_tank', 'assets/images/enemy_tank.svg', { width: 64, height: 64 });
 
-    this.load.svg('heart', '/assets/images/heart.svg', { width: 48, height: 44 });
+    this.load.svg('boss_beetle', 'assets/images/boss_beetle.svg', { width: 256, height: 128 });
+    this.load.svg('boss_brute', 'assets/images/boss_brute.svg', { width: 256, height: 128 });
+    this.load.svg('boss_manta', 'assets/images/boss_manta.svg', { width: 256, height: 128 });
+
+    this.load.svg('heart', 'assets/images/heart.svg', { width: 48, height: 44 });
     this.load.svg('crate', 'assets/images/logo-white.svg', { width: 14, height: 22 });
 
     this.load.audio('bgm', 'assets/sfx/bgm.ogg');
